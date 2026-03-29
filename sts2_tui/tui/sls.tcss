@@ -1,0 +1,728 @@
+/* ============================================================
+   SLS-CLI  —  Dark terminal theme for Slay the Spire 2 TUI
+   ============================================================ */
+
+/* ---------- Global ---------- */
+
+Screen {
+    background: $surface;
+}
+
+/* ---------- Combat Screen ---------- */
+
+#combat-screen {
+    layout: grid;
+    grid-size: 1;
+    grid-rows: auto auto 1fr auto auto auto auto auto auto auto;
+}
+
+/* -- Top bar -- */
+#top-bar {
+    height: 1;
+    background: $panel;
+    padding: 0 0;
+    content-align: left middle;
+}
+
+/* -- Turn indicator -- */
+#turn-indicator {
+    height: 1;
+    background: $panel;
+    content-align: center middle;
+    text-align: center;
+    width: 100%;
+}
+
+/* -- Enemy area -- */
+#enemy-area {
+    height: 1fr;
+    min-height: 10;
+    layout: horizontal;
+    content-align: center middle;
+    align: center middle;
+    padding: 1 2;
+}
+
+.enemy-panel {
+    width: auto;
+    min-width: 28;
+    max-width: 40;
+    height: auto;
+    margin: 0 2;
+    padding: 1 2;
+    border: round $accent;
+    background: $panel;
+    content-align: center top;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.enemy-name {
+    text-style: bold;
+    color: $error;
+    text-align: center;
+    width: 100%;
+}
+
+.enemy-hp {
+    color: $error;
+    text-align: center;
+    width: 100%;
+}
+
+.enemy-block {
+    color: $primary;
+    text-align: center;
+    width: 100%;
+}
+
+.enemy-intent {
+    text-align: center;
+    width: 100%;
+    margin-top: 1;
+    text-style: bold;
+}
+
+.intent-attack {
+    color: #ff4444;
+}
+
+.intent-defend {
+    color: #44bbff;
+}
+
+.intent-buff {
+    color: #44ff88;
+}
+
+.intent-debuff {
+    color: #cc44ff;
+}
+
+.intent-unknown {
+    color: $text-muted;
+}
+
+.enemy-powers {
+    text-align: center;
+    width: 100%;
+    color: $warning;
+    margin-top: 1;
+}
+
+/* -- Incoming damage summary -- */
+#incoming-summary {
+    height: 1;
+    background: $panel;
+    content-align: center middle;
+    text-align: center;
+    width: 100%;
+    padding: 0 1;
+}
+
+/* -- Orb display (Defect only) -- */
+#orb-display {
+    height: 1;
+    background: $panel;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+/* -- Osty companion display (Necrobinder only) -- */
+#osty-display {
+    height: 1;
+    background: $panel;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+/* -- Stars resource display (Regent only) -- */
+#stars-display {
+    height: 1;
+    background: $panel;
+    padding: 0 1;
+    content-align: center middle;
+}
+
+/* -- Player info bar (below hand) -- */
+#player-area {
+    height: 3;
+    layout: horizontal;
+    background: $panel;
+    padding: 0 1;
+}
+
+#player-stats {
+    width: 1fr;
+    padding: 0 1;
+}
+
+.energy-display {
+    text-style: bold;
+    color: $warning;
+}
+
+#pile-counts {
+    width: auto;
+    min-width: 30;
+    padding: 0 1;
+    content-align: right middle;
+}
+
+/* -- Hand count label -- */
+#hand-label {
+    height: 1;
+    background: $surface-darken-1;
+    content-align: center middle;
+    text-align: center;
+    width: 100%;
+}
+
+/* -- Hand area -- */
+#hand-area {
+    height: auto;
+    min-height: 5;
+    max-height: 12;
+    layout: horizontal;
+    align: center middle;
+    padding: 0 1;
+    background: $surface-darken-1;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.card-widget {
+    width: 1fr;
+    min-width: 18;
+    max-width: 30;
+    height: auto;
+    margin: 0 0 0 1;
+    padding: 0 1;
+    border: round $primary-background;
+    background: $panel;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.card-widget.--selected {
+    border: round $warning;
+    background: $panel-lighten-1;
+}
+
+.card-widget:hover {
+    border: round $accent;
+}
+
+.card-widget.--unplayable {
+    opacity: 0.4;
+    border: round $surface-darken-1;
+}
+
+.card-header {
+    text-style: bold;
+    width: 100%;
+}
+
+.card-type-attack .card-header {
+    color: #ff5555;
+}
+
+.card-type-skill .card-header {
+    color: #55ff55;
+}
+
+.card-type-power .card-header {
+    color: #5588ff;
+}
+
+.card-type-status .card-header {
+    color: $text-muted;
+}
+
+.card-type-curse .card-header {
+    color: #cc44cc;
+}
+
+.card-desc {
+    color: $text-muted;
+    width: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.card-cost {
+    text-style: bold;
+    color: $warning;
+}
+
+.card-index {
+    text-style: bold;
+    color: $accent;
+}
+
+/* -- Footer / relic bar -- */
+#relic-bar {
+    height: 3;
+    max-height: 3;
+    background: $panel;
+    layout: horizontal;
+    padding: 0 1;
+    content-align: left middle;
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+#relic-list {
+    width: 1fr;
+}
+
+#shortcut-hints {
+    width: auto;
+    min-width: 40;
+    content-align: right middle;
+    color: $text-muted;
+}
+
+/* -- Target indicator -- */
+.target-indicator {
+    text-style: bold;
+    color: $warning;
+}
+
+/* ---------- Map Screen ---------- */
+
+#map-screen {
+    layout: vertical;
+}
+
+#map-header {
+    height: 3;
+    background: $panel;
+    padding: 0 2;
+    content-align: center middle;
+    text-style: bold;
+}
+
+#map-viewport {
+    height: 1fr;
+    padding: 0 2;
+    overflow-y: auto;
+}
+
+#map-content {
+    width: 100%;
+    height: auto;
+    padding: 1 0;
+}
+
+#map-player-status {
+    height: 3;
+    background: $panel;
+    padding: 0 2;
+    content-align: center middle;
+}
+
+#map-footer {
+    height: 3;
+    background: $panel;
+    padding: 0 2;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+/* ---------- Card Reward Screen ---------- */
+
+#card-reward-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+#reward-title {
+    text-align: center;
+    text-style: bold;
+    height: 3;
+    content-align: center middle;
+    width: 100%;
+}
+
+#reward-cards {
+    layout: horizontal;
+    align: center middle;
+    height: auto;
+    width: 100%;
+    padding: 2 2;
+    overflow: hidden auto;
+}
+
+.reward-card {
+    width: 1fr;
+    min-width: 22;
+    max-width: 34;
+    height: auto;
+    min-height: 10;
+    margin: 0 2;
+    padding: 1 2;
+    border: round $primary-background;
+    background: $panel;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.reward-card:hover {
+    border: round $accent;
+}
+
+.reward-card.--selected {
+    border: round $warning;
+    background: $panel-lighten-1;
+}
+
+.reward-card-name {
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+}
+
+.reward-card-type {
+    text-align: center;
+    width: 100%;
+    color: $text-muted;
+}
+
+.reward-card-desc {
+    margin-top: 1;
+    width: 100%;
+    height: auto;
+    text-align: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.reward-card-cost {
+    text-align: center;
+    width: 100%;
+    color: $warning;
+    text-style: bold;
+}
+
+#reward-footer {
+    height: 3;
+    content-align: center middle;
+    color: $text-muted;
+    width: 100%;
+    text-align: center;
+}
+
+/* ---------- Rest Screen ---------- */
+
+#rest-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+#rest-title {
+    text-align: center;
+    text-style: bold;
+    height: auto;
+    max-height: 12;
+    content-align: center middle;
+    width: 100%;
+    margin-top: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#rest-options {
+    layout: horizontal;
+    align: center middle;
+    height: auto;
+    width: 100%;
+    padding: 1 1;
+    overflow: hidden auto;
+}
+
+.rest-option {
+    width: 1fr;
+    min-width: 20;
+    max-width: 35;
+    height: auto;
+    min-height: 6;
+    margin: 0 1;
+    padding: 1 1;
+    border: round $primary-background;
+    background: $panel;
+    content-align: center middle;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.rest-option:hover {
+    border: round $accent;
+}
+
+.rest-option.--selected {
+    border: round $warning;
+    background: $panel-lighten-1;
+}
+
+.rest-option-title {
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+}
+
+.rest-option-desc {
+    margin-top: 1;
+    text-align: center;
+    width: 100%;
+    height: auto;
+    color: $text-muted;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#rest-footer {
+    height: 3;
+    content-align: center middle;
+    color: $text-muted;
+    width: 100%;
+    text-align: center;
+}
+
+/* ---------- Event Screen (was reusing #rest-screen) ---------- */
+
+#event-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+/* ---------- Generic Screen (was reusing #rest-screen) ---------- */
+
+#generic-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+/* ---------- Character Select Screen (was reusing #rest-screen) ---------- */
+
+#char-select-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+/* ---------- Shop Screen ---------- */
+
+#shop-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+#shop-title {
+    text-align: center;
+    text-style: bold;
+    height: 3;
+    content-align: center middle;
+    width: 100%;
+    margin-top: 1;
+}
+
+#shop-viewport {
+    height: 1fr;
+    padding: 0 2;
+    overflow-y: auto;
+}
+
+#shop-body {
+    width: 100%;
+    height: auto;
+    padding: 0 2;
+}
+
+#shop-footer {
+    height: 3;
+    content-align: center middle;
+    color: $text-muted;
+    width: 100%;
+    text-align: center;
+    background: $panel;
+}
+
+/* ---------- Potion Menu Overlay ---------- */
+
+#potion-overlay {
+    align: center middle;
+}
+
+#potion-container {
+    width: 70;
+    height: auto;
+    max-height: 80%;
+    border: round $accent;
+    background: $surface;
+    padding: 1 2;
+}
+
+#potion-title {
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    height: 3;
+    content-align: center middle;
+}
+
+#potion-body {
+    width: 100%;
+    height: auto;
+}
+
+#potion-footer {
+    text-align: center;
+    width: 100%;
+    height: 1;
+    margin-top: 1;
+}
+
+/* ---------- Pile Overlay ---------- */
+
+#pile-overlay {
+    align: center middle;
+}
+
+#pile-container {
+    width: 70;
+    height: 80%;
+    border: round $accent;
+    background: $surface;
+    padding: 1 2;
+}
+
+#pile-title {
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    height: 3;
+    content-align: center middle;
+}
+
+#pile-list {
+    height: 1fr;
+    overflow-y: auto;
+}
+
+.pile-card-row {
+    height: 1;
+    padding: 0 1;
+}
+
+#pile-footer {
+    height: 2;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+/* ---------- Deck Viewer Overlay ---------- */
+
+#deck-overlay {
+    align: center middle;
+}
+
+#deck-container {
+    width: 80;
+    height: 85%;
+    border: round $accent;
+    background: $surface;
+    padding: 1 2;
+}
+
+#deck-title {
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    height: 3;
+    content-align: center middle;
+}
+
+#deck-list {
+    height: 1fr;
+    overflow-y: auto;
+}
+
+#deck-footer {
+    height: 2;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+/* ---------- Card Reward Upgrade Preview ---------- */
+
+.reward-card-upgrade {
+    margin-top: 1;
+    width: 100%;
+    height: auto;
+    text-align: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* ---------- Help Overlay ---------- */
+
+#help-overlay {
+    align: center middle;
+}
+
+#help-container {
+    width: 60;
+    height: 70%;
+    border: round $accent;
+    background: $surface;
+    padding: 1 2;
+}
+
+#help-title {
+    text-style: bold;
+    text-align: center;
+    width: 100%;
+    height: 3;
+    content-align: center middle;
+}
+
+#help-content {
+    height: 1fr;
+    overflow-y: auto;
+}
+
+#help-footer {
+    height: 2;
+    content-align: center middle;
+    color: $text-muted;
+}
+
+/* ---------- Error Recovery Screen ---------- */
+
+#error-recovery-screen {
+    layout: vertical;
+    align: center middle;
+}
+
+#error-title {
+    text-align: center;
+    height: auto;
+    content-align: center middle;
+    width: 100%;
+}
+
+#error-message {
+    text-align: center;
+    height: auto;
+    content-align: center middle;
+    width: 100%;
+}
+
+#error-options {
+    text-align: center;
+    height: 3;
+    content-align: center middle;
+    width: 100%;
+    background: $panel;
+}
