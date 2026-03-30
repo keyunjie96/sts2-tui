@@ -36,63 +36,22 @@ log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Buff / debuff name sets (used for coloring powers on enemies and player)
+# Power color helper (uses engine-provided "type" field)
 # ---------------------------------------------------------------------------
 
-DEBUFF_NAMES: frozenset[str] = frozenset({
-    "Vulnerable", "Weak", "Frail", "Poison", "Constricted",
-    "Hex", "Entangled", "Infested",
-    "Constrict", "Shrink",
-    "Doom", "Ringing",
-    "Tangled", "Tender",
-    # v5 Round 1 additions
-    "Neurosurge",
-    # v8
-    "Strangle",
-})
 
-BUFF_NAMES: frozenset[str] = frozenset({
-    "Strength", "Dexterity", "Artifact", "Metallicize", "Plated Armor",
-    "Ritual", "Thorns", "Regenerate", "Angry", "Curl Up",
-    "Illusion", "Slippery", "Minion",
-    "Juggernaut", "Feel No Pain", "Combust", "Dark Embrace", "Evolve",
-    "Fire Breathing", "Flame Barrier", "Focus", "Heatsink",
-    "Electrodynamics", "Storm", "Creative AI", "Accuracy", "Envenom",
-    "Noxious Fumes", "After Image", "A Thousand Cuts", "Footwork",
-    "Phantasmal Killer", "Sadistic Nature",
-    "Phantom Blades", "Serpent Form", "Nightmare",
-    "Imbalanced",
-    "Buffer", "Feral", "Pagestorm", "Friendship", "Free Power",
-    "Energy Next Turn",
-    "Territorial", "Burrowed", "Flutter",
-    # v3 Round 1 additions (Act 2 powers)
-    "Echo Form", "Hailstorm", "Iteration", "Loop",
-    "Pale Blue Dot", "Parry", "Royalties", "Seeking Edge",
-    "Smokestack", "Spinner", "Subroutine", "Trash to Treasure",
-    "Unmovable", "Vigor",
-    # Enemy powers that benefit the player or alert about enemy capability
-    "Slow", "Hard to Kill",
-    # v4 Round 1 additions
-    "Calcify", "Foregone Conclusion", "Lethality", "Machine Learning",
-    "One-Two Punch", "Orbit", "Reaper Form", "Reflect",
-    "Void Form", "Well-Laid Plans",
-    # Enemy powers (v4 Round 1)
-    "Grapple", "Personal Hive",
-    # v5 Round 1 additions (player buffs)
-    "Child of the Stars", "Colossus", "Consuming Shadow", "Fasten",
-    "Nostalgia", "Plating", "Retain Hand", "The Gambit", "Thunder",
-    # v5 Round 1 additions (enemy buffs)
-    "Conqueror", "Debilitate", "Vital Spark",
-    # v6 Round 1 additions
-    "Automation", "Black Hole", "Block Next Turn", "Coolant", "Demon Form",
-    "Haunt", "Rolling Boulder", "Spectrum Shift", "Sword Sage",
-    # v7 additions
-    "Afterimage", "Blur", "Demesne", "Double Damage", "Pillar of Creation",
-    "Shadow Step", "Sleight of Flesh", "Synchronize",
-    # v8 additions
-    "Burst", "Countdown", "Fan of Knives", "Infinite Blades",
-    "Master Planner", "Rage", "Shroud", "Star Next Turn",
-})
+def _power_style(pw: dict) -> str:
+    """Return a Rich style string for a power dict.
+
+    Uses the ``"type"`` field sent by sts2-cli (``"buff"``, ``"debuff"``, or
+    ``None``).  Falls back to ``"cyan"`` for unknown / missing type.
+    """
+    ptype = pw.get("type")
+    if ptype == "debuff":
+        return "magenta"
+    if ptype == "buff":
+        return "green"
+    return "cyan"
 
 
 # ---------------------------------------------------------------------------
@@ -383,13 +342,7 @@ class EnemyWidget(Static):
             name = pw.get("name", "?")
             amount = pw.get("amount", 0)
             desc = pw.get("description", "")
-            # Debuffs in magenta, buffs in green, neutral in cyan
-            if name in DEBUFF_NAMES:
-                style = "magenta"
-            elif name in BUFF_NAMES:
-                style = "green"
-            else:
-                style = "cyan"
+            style = _power_style(pw)
             # Special display for tick-based powers (Poison, Constrict)
             if name in self._TICK_POWERS and amount > 0:
                 t.append(f"{name}", style=f"bold {style}")
@@ -398,7 +351,7 @@ class EnemyWidget(Static):
             else:
                 t.append(f"{name}", style=style)
                 if amount != 0:
-                    sign = "+" if amount > 0 and name in BUFF_NAMES else ""
+                    sign = "+" if amount > 0 and pw.get("type") == "buff" else ""
                     t.append(f" {sign}{amount}", style=f"bold {style}")
             if desc:
                 t.append(f" ({desc})", style=f"dim {style}")
@@ -434,12 +387,7 @@ class PlayerStats(Static):
             name = pw.get("name", "?")
             amount = pw.get("amount", 0)
             desc = pw.get("description", "")
-            if name in DEBUFF_NAMES:
-                style = "magenta"
-            elif name in BUFF_NAMES:
-                style = "green"
-            else:
-                style = "cyan"
+            style = _power_style(pw)
             if name in _tick_powers and amount > 0:
                 t.append(f"{name}", style=f"bold {style}")
                 t.append(f" {amount}", style=f"bold {style}")
@@ -447,7 +395,7 @@ class PlayerStats(Static):
             else:
                 t.append(f"{name}", style=style)
                 if amount != 0:
-                    sign = "+" if amount > 0 and name in BUFF_NAMES else ""
+                    sign = "+" if amount > 0 and pw.get("type") == "buff" else ""
                     t.append(f" {sign}{amount}", style=f"bold {style}")
             if desc:
                 t.append(f" ({desc})", style=f"dim {style}")
