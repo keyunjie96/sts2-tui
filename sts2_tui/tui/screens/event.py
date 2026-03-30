@@ -47,7 +47,7 @@ class EventOptionWidget(Static):
         title = _resolve_inline_loc_keys(_name_str(opt.get("title"))) or f"Option {self.display_index + 1}"
         desc = opt.get("description", "")
         is_locked = opt.get("is_locked", False)
-        is_enabled = opt.get("is_enabled", True)
+        is_enabled = opt.get("is_enabled") is not False
 
         title_text = Text(justify="center")
         title_text.append(f"[{self.display_index + 1}] ", style="bold yellow")
@@ -213,7 +213,7 @@ class EventScreen(Screen):
             if opt.get("is_locked", False):
                 self.notify(L("option_locked"), severity="warning")
                 return
-            if not opt.get("is_enabled", True):
+            if not opt.get("is_enabled") is not False:
                 self.notify(L("option_unavailable"), severity="warning")
                 return
             self.selected = index
@@ -229,7 +229,7 @@ class EventScreen(Screen):
         if opt.get("is_locked", False):
             self.notify(L("option_locked"), severity="warning")
             return
-        if not opt.get("is_enabled", True):
+        if not opt.get("is_enabled") is not False:
             self.notify(L("option_unavailable"), severity="warning")
             return
 

@@ -439,6 +439,12 @@ class SlsApp(App):
                 await self.controller.quit()
             except Exception:
                 pass
+        # Kill old subprocess even if quit() failed
+        if hasattr(self, 'bridge') and self.bridge and hasattr(self.bridge, '_proc') and self.bridge._proc:
+            try:
+                self.bridge._proc.kill()
+            except Exception:
+                pass
         # Remove game-over widget
         try:
             widget = self.screen.query_one("#game-over-display")
