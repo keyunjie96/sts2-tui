@@ -252,6 +252,9 @@ class EnemyWidget(Static):
         ratio = hp / max_hp if max_hp else 0
         bar_width = 20
         filled = int(ratio * bar_width)
+        # Ensure at least 1 filled char while the enemy is alive
+        if hp > 0:
+            filled = max(1, filled)
         empty = bar_width - filled
         color = hp_color(hp, max_hp)
 
@@ -1281,7 +1284,10 @@ class CombatScreen(Screen):
         hand = extract_hand(self.state)
         if not hand:
             return
-        if self.selected_card <= 0:
+        if self.selected_card < 0:
+            # No card selected yet -- start at the first card (consistent with RIGHT)
+            self.selected_card = 0
+        elif self.selected_card == 0:
             self.selected_card = len(hand) - 1
         else:
             self.selected_card = self.selected_card - 1

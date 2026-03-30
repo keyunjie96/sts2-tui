@@ -70,6 +70,16 @@ class GenericScreen(Screen):
             engine_title = self.state.get("title")
             if engine_title:
                 title.append(f"  {_name_str(engine_title)}  ", style="bold white on dark_blue")
+            elif decision == "card_select":
+                # Generate contextual title from room_type when engine sends no title
+                room_type = self.state.get("context", {}).get("room_type", "")
+                _CARD_SELECT_TITLES = {
+                    "RestSite": "UPGRADE A CARD",
+                    "Shop": "REMOVE A CARD",
+                    "Merchant": "REMOVE A CARD",
+                }
+                ctx_title = _CARD_SELECT_TITLES.get(room_type, "CHOOSE A CARD")
+                title.append(f"  {ctx_title}  ", style="bold white on dark_blue")
             else:
                 title.append(f"  {decision.upper().replace('_', ' ')}  ", style="bold white on dark_blue")
             # Show engine-provided description below the title
@@ -274,7 +284,11 @@ class GenericScreen(Screen):
             return
         self._busy = True
         try:
-            state = await self.controller.leave_room()
+            decision = self.state.get("decision", "")
+            if decision == "card_select":
+                state = await self.controller.skip_select()
+            else:
+                state = await self.controller.leave_room()
 
             if state.get("type") == "error":
                 state = await self.controller.proceed()

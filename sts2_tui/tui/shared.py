@@ -32,7 +32,7 @@ CARD_TYPE_COLORS: dict[str, str] = {
     "Attack": "#ff5555",
     "Skill": "#55ff55",
     "Power": "#5588ff",
-    "Status": "dim",
+    "Status": "#ccaa44",
     "Curse": "#cc44cc",
 }
 

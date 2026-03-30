@@ -255,7 +255,10 @@ class CardRewardScreen(Screen):
         t.append(f"\n  {L('potion_rewards')}  ", style="bold white on dark_blue")
         if self.potion_slots_full:
             t.append(f"  {L('potion_slots_full')}", style="bold red")
-        t.append(f"\n  [P] {L('collect_potion')}  [X] {L('skip_potions')}", style="dim")
+        if self.potion_slots_full:
+            t.append(f"\n  [P] {L('discard_for_potion')}  [X] {L('skip_potions')}", style="dim")
+        else:
+            t.append(f"\n  [P] {L('collect_potion')}  [X] {L('skip_potions')}", style="dim")
         return t
 
     def _footer_text(self) -> Text:
@@ -271,7 +274,10 @@ class CardRewardScreen(Screen):
             bindings.append(f" {L('skip')}", style="dim")
         if self.potion_rewards:
             bindings.append("  [P]", style="bold cyan")
-            bindings.append(f" {L('collect_potion')}  ", style="dim")
+            if self.potion_slots_full:
+                bindings.append(f" {L('discard_for_potion')}  ", style="dim")
+            else:
+                bindings.append(f" {L('collect_potion')}  ", style="dim")
             bindings.append("[X]", style="bold cyan")
             bindings.append(f" {L('skip_potions')}", style="dim")
         return build_status_footer(bindings, self.state)

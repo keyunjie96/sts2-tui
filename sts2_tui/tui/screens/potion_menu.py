@@ -142,6 +142,8 @@ class PotionMenuOverlay(Screen):
                     t.append(f" -- {desc}", style="dim white")
                 if target_type == "AnyEnemy":
                     t.append(f" ({L('potion_targeted')})", style="dim yellow")
+                elif target_type == "AllEnemy":
+                    t.append(f" ({L('potion_aoe')})", style="dim yellow")
             else:
                 t.append(f"({L('potion_empty')})", style="dim")
         t.append("\n")

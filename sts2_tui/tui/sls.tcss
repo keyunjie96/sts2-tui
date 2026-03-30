@@ -236,7 +236,7 @@ Screen {
 }
 
 .card-type-status .card-header {
-    color: $text-muted;
+    color: #ccaa44;
 }
 
 .card-type-curse .card-header {
