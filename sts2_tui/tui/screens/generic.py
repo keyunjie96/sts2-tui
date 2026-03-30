@@ -286,7 +286,11 @@ class GenericScreen(Screen):
         if not self._is_multi_select or self.selected < 0 or not self.options:
             return
         max_sel = self.state.get("max_select") or len(self.options)
+        min_sel = self.state.get("min_select") or 0
         if self.selected in self._selected_indices:
+            if len(self._selected_indices) <= min_sel:
+                self.notify(f"Must keep at least {min_sel} selected", severity="warning")
+                return
             self._selected_indices.discard(self.selected)
         elif len(self._selected_indices) < max_sel:
             self._selected_indices.add(self.selected)

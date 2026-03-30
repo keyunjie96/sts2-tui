@@ -345,7 +345,7 @@ class EnemyWidget(Static):
             if i > 0:
                 t.append("  ", style="dim")
             name = pw.get("name", "?")
-            amount = pw.get("amount", 0)
+            amount = pw.get("amount") or 0
             desc = pw.get("description", "")
             style = _power_style(pw)
             # Special display for tick-based powers (Poison, Constrict)
@@ -392,7 +392,7 @@ class PlayerStats(Static):
         for pw in player.get("powers", []):
             t.append("  |  ", style="dim")
             name = pw.get("name", "?")
-            amount = pw.get("amount", 0)
+            amount = pw.get("amount") or 0
             desc = pw.get("description", "")
             style = _power_style(pw)
             if name in _tick_powers and amount > 0:
@@ -443,7 +443,7 @@ class OrbDisplay(Static):
         focus_val = None
         for pw in player.get("powers", []):
             if pw.get("name") == "Focus":
-                focus_val = pw.get("amount", 0)
+                focus_val = pw.get("amount") or 0
                 break
         if focus_val is not None:
             focus_style = "bold green" if focus_val >= 0 else "bold red"
@@ -1258,7 +1258,7 @@ class CombatScreen(Screen):
                 self._stuck_count += 1
                 if self._stuck_count > 3:
                     self.notify(
-                        "Engine stuck -- combat cannot advance. Please press [Esc] to leave.",
+                        "Engine stuck -- combat cannot advance. Press [E] to end turn or [Q] to quit.",
                         severity="error",
                     )
                     return

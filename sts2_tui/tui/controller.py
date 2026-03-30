@@ -459,7 +459,7 @@ def calculate_display_damage(base_damage: int, player: dict, target: dict | None
     # Add player Strength
     for p in player.get("powers", []):
         if p.get("name", "").lower() == "strength":
-            damage += p.get("amount", 0)
+            damage += p.get("amount") or 0
 
     # Player Weak reduces damage by 25%
     for p in player.get("powers", []):
@@ -488,7 +488,7 @@ def calculate_display_block(base_block: int, player: dict) -> int:
     # Add player Dexterity
     for p in player.get("powers", []):
         if p.get("name", "").lower() == "dexterity":
-            block += p.get("amount", 0)
+            block += p.get("amount") or 0
 
     # Player Frail reduces block by 25%
     for p in player.get("powers", []):
@@ -596,7 +596,7 @@ def _resolve_applier_name(text: str, *, owner: str, applier: str,
 def extract_enemies(state: dict) -> list[dict]:
     """Normalise enemy data from a combat_play response."""
     result = []
-    for e in state.get("enemies", []):
+    for e in state.get("enemies") or []:
         enemy_name = _name_str(e.get("name"))
         powers = []
         for pw in e.get("powers") or []:
@@ -605,7 +605,7 @@ def extract_enemies(state: dict) -> list[dict]:
             # {DamageDecrease}, {OwnerName}).
             # Run through resolve_card_description as a fallback.
             pw_name = _name_str(pw.get("name", ""))
-            pw_amount = pw.get("amount", 0)
+            pw_amount = pw.get("amount") or 0
             raw_desc = pw.get("description", "")
             # Substitute {OwnerName} with the enemy's name before template resolution
             raw_desc = re.sub(r"\{OwnerName\}", enemy_name, raw_desc)
@@ -760,7 +760,7 @@ def extract_player(state: dict) -> dict:
         # {DamageDecrease}, {ApplierName...}).
         # Run through resolve_card_description as a fallback.
         resolved_name = _name_str(pw.get("name", ""))
-        pw_amount = pw.get("amount", 0)
+        pw_amount = pw.get("amount") or 0
         raw_desc = pw.get("description", "")
         # Substitute {ApplierName.StringValue:cond:trueText|falseText} pattern.
         # For player powers: use the true branch (applier-alive context).
@@ -936,7 +936,7 @@ def _detect_x_cost(cost: int, description: str) -> bool:
 def extract_hand(state: dict) -> list[dict]:
     """Normalise hand card data from a combat_play response."""
     result = []
-    for card in state.get("hand", []):
+    for card in state.get("hand") or []:
         stats = card.get("stats", {}) or {}
         # Enrich stats from game_data: either fill in completely when empty,
         # or merge missing keys when engine stats are incomplete (e.g. Dominate
@@ -1039,7 +1039,7 @@ def _enrich_card_stats(card: dict) -> dict:
             if raw_vars:
                 return _expand_vars(raw_vars)
     except Exception:
-        pass
+        log.debug("_enrich_card_stats failed for %s", _name_str(card.get("name")), exc_info=True)
     return {}
 
 

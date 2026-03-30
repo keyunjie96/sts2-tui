@@ -19,14 +19,22 @@ from textual.app import App
 # ---------------------------------------------------------------------------
 
 GROUND_TRUTH_DIR = Path(__file__).parent / "ground_truth_data"
+_GROUND_TRUTH_FILE = GROUND_TRUTH_DIR / "seed_1_raw.json"
+
+# Skip the entire module at collection time if ground truth data is missing.
+# Using skipif avoids the collection error that pytest.skip() causes at
+# module level.
+pytestmark = pytest.mark.skipif(
+    not _GROUND_TRUTH_FILE.exists(),
+    reason="seed_1_raw.json not found -- run ground truth generator first",
+)
 
 
 def _load_raw_responses() -> list[dict]:
     """Load all raw sts2-cli responses from seed_1_raw.json."""
-    path = GROUND_TRUTH_DIR / "seed_1_raw.json"
-    if not path.exists():
+    if not _GROUND_TRUTH_FILE.exists():
         pytest.skip("seed_1_raw.json not found")
-    with open(path) as f:
+    with open(_GROUND_TRUTH_FILE) as f:
         return json.load(f)
 
 
@@ -38,8 +46,11 @@ def _find_decision(responses: list[dict], decision_type: str) -> dict:
     pytest.skip(f"No '{decision_type}' decision found in seed_1_raw.json")
 
 
-# Preload all raw data once at module level
-_RAW_RESPONSES = _load_raw_responses()
+# Preload all raw data once at module level (safe because pytestmark skips
+# the module when the file is absent).
+_RAW_RESPONSES: list[dict] = []
+if _GROUND_TRUTH_FILE.exists():
+    _RAW_RESPONSES = _load_raw_responses()
 
 
 def _get_combat_state() -> dict:

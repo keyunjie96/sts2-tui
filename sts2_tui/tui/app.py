@@ -263,6 +263,13 @@ class SlsApp(App):
 
         while len(self.screen_stack) > 1:
             self.pop_screen()
+        # Guard against mounting the game-over widget twice (DuplicateIds)
+        try:
+            existing = self.screen.query_one("#game-over-display")
+            if existing:
+                return
+        except Exception:
+            pass
         # Mount on the current screen (not the App) so the widget has a
         # proper parent and gets cleaned up on next screen transition.
         self.screen.mount(Static(t, id="game-over-display"))
