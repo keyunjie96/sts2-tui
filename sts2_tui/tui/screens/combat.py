@@ -43,6 +43,7 @@ DEBUFF_NAMES: frozenset[str] = frozenset({
     "Vulnerable", "Weak", "Frail", "Poison", "Constricted",
     "Hex", "Entangled", "Infested",
     "Constrict", "Shrink",
+    "Doom", "Ringing",
 })
 
 BUFF_NAMES: frozenset[str] = frozenset({
@@ -56,6 +57,9 @@ BUFF_NAMES: frozenset[str] = frozenset({
     "Phantasmal Killer", "Sadistic Nature",
     "Phantom Blades", "Serpent Form", "Nightmare",
     "Imbalanced",
+    "Buffer", "Feral", "Pagestorm", "Friendship", "Free Power",
+    "Energy Next Turn",
+    "Territorial", "Burrowed", "Flutter",
 })
 
 
@@ -308,6 +312,7 @@ class EnemyWidget(Static):
             ("is_stun", "\u26a1", "Stun", "bold yellow"),
             ("is_summon", "\u2728", "Summon", "bold white"),
             ("is_sleep", "\U0001f4a4", "Zzz", "dim cyan"),
+            ("is_card_debuff", "\U0001f0cf", "Card Debuff", "bold magenta"),
         ]
 
         secondary_shown = False
@@ -429,7 +434,7 @@ class OrbDisplay(Static):
         "Frost": ("\u2744", "blue"),
         "Dark": ("\u25cf", "magenta"),
         "Plasma": ("\u2600", "white"),
-        "Glass": ("\u2662", "cyan"),  # diamond suit for Glass orb
+        "Glass": ("\u2662", "cyan"),  # diamond suit for Glass orb (decays each turn)
     }
 
     def __init__(self, state: dict) -> None:
@@ -446,6 +451,18 @@ class OrbDisplay(Static):
         t = Text()
         t.append(" Orbs ", style="dim cyan")
 
+        # Show Focus value prominently next to orb display
+        focus_val = None
+        for pw in player.get("powers", []):
+            if pw.get("name") == "Focus":
+                focus_val = pw.get("amount", 0)
+                break
+        if focus_val is not None:
+            focus_style = "bold green" if focus_val >= 0 else "bold red"
+            sign = "+" if focus_val > 0 else ""
+            t.append(f"[Focus {sign}{focus_val}]", style=focus_style)
+            t.append(" ", style="dim")
+
         # Render each filled orb slot
         for orb in orbs:
             otype = orb.get("type", "Empty")
@@ -455,6 +472,9 @@ class OrbDisplay(Static):
             t.append(f" {icon}", style=f"bold {color}")
             t.append(f" {passive}", style=f"dim {color}")
             t.append(f"/{evoke}", style=f"bold {color}")
+            # Annotate Glass orbs with decay indicator
+            if otype == "Glass":
+                t.append("\u2193", style="dim red")  # down arrow = decaying
 
         # Render empty slots
         empty_count = max(0, orb_slots - len(orbs))

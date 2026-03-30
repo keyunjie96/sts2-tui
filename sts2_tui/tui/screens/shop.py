@@ -247,6 +247,8 @@ _KNOWN_POTION_EXTRA_VARS: dict[str, dict[str, int]] = {
     "distilled chaos": {"repeat": 3},
     "potion of capacity": {"repeat": 2},
     "stable serum": {"repeat": 1},
+    "radiant tincture": {"energy": 2, "radiance": 3},
+    "potion of binding": {"weakpower": 1, "vulnerablepower": 1},
 }
 
 

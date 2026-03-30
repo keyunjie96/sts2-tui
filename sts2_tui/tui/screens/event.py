@@ -60,7 +60,13 @@ class EventOptionWidget(Static):
             # Resolve template vars using the full resolver (handles
             # {Var:diff()}, {Var:plural:...}, BBCode, etc.)
             option_vars = opt.get("vars") or {}
-            resolved = resolve_card_description(desc, option_vars)
+            # Pre-resolve any localization keys in var values
+            # (e.g., "character": "DEFECT.title" -> "Defect")
+            resolved_vars = {
+                k: _name_str(v) if isinstance(v, str) and "." in v and v[0].isupper() else v
+                for k, v in option_vars.items()
+            }
+            resolved = resolve_card_description(desc, resolved_vars)
 
             desc_text = Text(justify="center")
             desc_text.append(resolved, style="dim white")

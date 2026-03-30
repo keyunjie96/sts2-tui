@@ -608,80 +608,80 @@ Defect (orbs, Focus, channel/evoke). Both include Act 2 shops and new enemy type
 
 ### New intent type: CardDebuff not handled
 
-- [ ] **"CardDebuff" intent type not parsed in `extract_enemies()`** — The Thieving Hopper (Defect line 247) sends `{"type": "CardDebuff"}` as an intent, which steals a card from the player's hand. In `controller.py` `extract_enemies()`, this falls through to the generic `elif itype:` catch-all (line 444) and is appended as the raw string "CardDebuff" to `intent_parts`. No `is_card_debuff` flag is set, so the `_SECONDARY_INTENTS` display loop in `EnemyWidget._intent_text()` cannot render it. When combined with an Attack intent (e.g., Attack 17 + CardDebuff), only "Attack 17" is shown; the CardDebuff part is silently lost because the secondary intents loop only checks flag-based entries, and the fallback on line 328 only fires when there is NO attack and NO secondary shown.
+- [x] **"CardDebuff" intent type not parsed in `extract_enemies()`** — Fixed: added explicit `CardDebuff` handler with `is_card_debuff` flag in `extract_enemies()` and corresponding entry in `_SECONDARY_INTENTS` display list in `EnemyWidget._intent_text()`.
 
 ### Unresolved localization key: SYNCHRONIZE_POWER
 
-- [ ] **"SYNCHRONIZE_POWER.title" renders as raw localization key in player powers** — When the Defect plays Synchronize (observed at line 273 onward), the engine sends a player power with `name: "SYNCHRONIZE_POWER.title"` and `description: "SYNCHRONIZE_POWER.description"`. The `_name_str()` function in `controller.py` only strips the `.name` suffix (line 43: `if s.endswith(".name")`), not `.title`. Additionally, `extract_player()` at line 507 does not pass power names through `_name_str()` at all — it uses `pw.get("name", "")` raw. So both the name and description display as unresolved keys like "SYNCHRONIZE_POWER.title (SYNCHRONIZE_POWER.description)" in the PlayerStats bar.
+- [x] **"SYNCHRONIZE_POWER.title" renders as raw localization key in player powers** — Fixed: `_name_str()` now handles `.title`, `.description`, and other localization suffixes; also strips `_POWER`/`_RELIC`/`_POTION` type suffixes. Both `extract_player()` and `extract_enemies()` now pass power names through `_name_str()` and descriptions through `resolve_card_description()`.
 
 ### Power description templates not resolved
 
-- [ ] **Player and enemy power descriptions with template vars are displayed raw** — Power descriptions containing `{energyPrefix:energyIcons(1)}` and similar templates are shown verbatim because `PlayerStats.render()` (combat.py line 414) and `EnemyWidget._powers_text()` (line 366) both pass the description straight to display without calling `resolve_card_description()`. Confirmed with "Free Power" description `"The next Power you play costs 0 {energyPrefix:energyIcons(1)}."` (Defect line 152/377) and "Feral" description `"The first time you play a 0{energyPrefix:energyIcons(1)} Attack each turn, return it to your Hand."` (Defect line 299). The raw template text appears in the power display.
+- [x] **Player and enemy power descriptions with template vars are displayed raw** — Fixed: power descriptions are now resolved via `resolve_card_description()` in `extract_player()` and `extract_enemies()` at extraction time, so PlayerStats and EnemyWidget receive pre-resolved text.
 
 ### InCombat template always stripped, even during combat
 
-- [ ] **`{InCombat:true_branch|false_branch}` always resolves to the false branch** — The regex on `controller.py` line 112 (`re.sub(r"\{InCombat:.*?\|\}", "", text, flags=re.DOTALL)`) unconditionally removes InCombat blocks, even when the card IS in combat. This affects cards that show calculated values only during combat: Synchronize shows `"Gain 2 Focus this turn for each unique Orb you have."` but strips `"(Gain 0 Focus)"` (Defect combat hand, line 271+). Gold Axe (Necrobinder card_reward) strips `"(Deals 0 damage)"`. Since the engine sends the same description template for both combat and non-combat contexts, the TUI could use the decision type (combat_play vs card_reward/shop) to decide which branch to show, but currently always strips it.
+- [x] **`{InCombat:true_branch|false_branch}` always resolves to the false branch** — Fixed: `resolve_card_description()` now accepts `in_combat` parameter; when True, shows the true branch. `extract_hand()`, `extract_player()`, and `extract_enemies()` pass `in_combat=True` since they operate in combat context. Reward/shop contexts remain `in_combat=False`.
 
 ### Power/buff/debuff classification gaps (new powers)
 
-- [ ] **"Doom" not in DEBUFF_NAMES** — Necrobinder player power (line 361+). Description: "At the end of the enemy turn, if it has at least as much Doom as HP, it dies." Applied to the player via Borrowed Time. Renders as neutral cyan instead of magenta. Doom on the player is a self-imposed debuff with lethal consequences.
+- [x] **"Doom" not in DEBUFF_NAMES** — Fixed: added to DEBUFF_NAMES. Also added player-context description rewrite ("it dies" -> "you die").
 
-- [ ] **"Ringing" not in DEBUFF_NAMES** — Both Necrobinder (line 270) and Defect (line 223) player power. Description: "You can only play 1 card this turn." Severely restricts the player's turn. Renders as neutral cyan instead of magenta.
+- [x] **"Ringing" not in DEBUFF_NAMES** — Fixed: added to DEBUFF_NAMES.
 
-- [ ] **"Buffer" not in BUFF_NAMES** — Defect player power (line 257). Description: "Prevent the next time you would lose HP." A strong defensive buff. Renders as neutral cyan instead of green.
+- [x] **"Buffer" not in BUFF_NAMES** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Feral" not in BUFF_NAMES** — Defect player power (line 299). Description about returning 0-cost Attacks to hand. A beneficial effect. Renders as neutral cyan instead of green.
+- [x] **"Feral" not in BUFF_NAMES** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Pagestorm" not in BUFF_NAMES** — Necrobinder player power (line 202). Description: "Whenever you draw an Ethereal card, draw 1 card." A beneficial draw engine. Renders as neutral cyan instead of green.
+- [x] **"Pagestorm" not in BUFF_NAMES** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Friendship" not in BUFF_NAMES** — Necrobinder player power (line 65). Description: "Gain 1 Energy at the start of each turn." A strong energy buff from the card of the same name. Renders as neutral cyan instead of green.
+- [x] **"Friendship" not in BUFF_NAMES** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Free Power" not in BUFF_NAMES** — Defect player power (line 152). Description: "The next Power you play costs 0 Energy." A beneficial cost reduction. Renders as neutral cyan instead of green.
+- [x] **"Free Power" not in BUFF_NAMES** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Energy Next Turn" not in BUFF_NAMES** — Necrobinder player power (line 129). Description: "Gain additional Energy next turn." A temporary energy buff. Renders as neutral cyan instead of green.
+- [x] **"Energy Next Turn" not in BUFF_NAMES** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Territorial" not in BUFF_NAMES (enemy)** — Enemy power on Byrdonis (Necrobinder line 138, Defect line 181). Description: "At the end of its turn, gains 1 Strength." A scaling enemy buff. Renders as neutral cyan instead of green.
+- [x] **"Territorial" not in BUFF_NAMES (enemy)** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Burrowed" not in BUFF_NAMES (enemy)** — Enemy power on Tunneler (Necrobinder line 298, Defect line 266). Description: "Block is not removed at the start of this creature's turn." An enemy defensive buff. Renders as neutral cyan instead of green.
+- [x] **"Burrowed" not in BUFF_NAMES (enemy)** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Flutter" not in BUFF_NAMES (enemy)** — Enemy power on Thieving Hopper (Defect line 256). Description: "Receives 50% less damage from Attacks." An enemy damage reduction buff. Renders as neutral cyan instead of green.
+- [x] **"Flutter" not in BUFF_NAMES (enemy)** — Fixed: added to BUFF_NAMES.
 
-- [ ] **"Escape Artist" not classified** — Enemy power on Thieving Hopper (Defect line 247). Description: "Exits the combat after 4 turns." A countdown timer. Neither buff nor debuff in the traditional sense but is strategically important. Currently renders as neutral cyan.
+- [x] **"Escape Artist" not classified** — Intentionally neutral: a countdown timer is neither buff nor debuff; cyan display is appropriate for informational mechanics.
 
-- [ ] **"Plow" not classified** — Enemy power on Ceremonial Beast (Necrobinder line 240, Defect line 204). Description: "The first time this creature's HP reaches 150 or below, it becomes Stunned." An HP-threshold trigger. Currently renders as neutral cyan.
+- [x] **"Plow" not classified** — Intentionally neutral: an HP-threshold trigger is an informational mechanic; cyan display is appropriate.
 
-- [ ] **"Hatch" not classified** — Enemy power on Tough Egg (Necrobinder line 393). Description: "Hatches after X turns." A transformation timer. Currently renders as neutral cyan.
+- [x] **"Hatch" not classified** — Intentionally neutral: a transformation timer is an informational mechanic; cyan display is appropriate.
 
-- [ ] **"Swipe" not classified** — Enemy power on Thieving Hopper (Defect line 251). Description: "Upon killing this enemy, the stolen card is returned." Incentive to kill. Currently renders as neutral cyan.
+- [x] **"Swipe" not classified** — Intentionally neutral: an incentive mechanic is informational; cyan display is appropriate.
 
 ### Hatch power description has literal "X" placeholder
 
-- [ ] **Hatch power description says "Hatches after X turns" with literal "X"** — The engine sends the Hatch power with `description: "Hatches after X turns."` and `amount: 1` (Necrobinder line 393, Tough Egg enemy). The "X" is a literal character in the description, not a template variable. The amount field (which counts down each turn) should replace the "X" to show "Hatches after 1 turn(s)." The TUI does not substitute the power's `amount` into the description text.
+- [x] **Hatch power description says "Hatches after X turns" with literal "X"** — Fixed: both `extract_player()` and `extract_enemies()` now substitute literal `X` in power descriptions with the power's `amount` value using `re.sub(r'\bX\b', str(amount), desc)`.
 
 ### Osty-damage cards lack damage preview
 
-- [ ] **Necrobinder Osty-damage Attack cards have no damage preview** — Cards like Unleash (`calculateddamage`), Flatten (`ostydamage`), and Poke (`ostydamage`) are Attack-type cards targeting AnyEnemy, but the engine sends `effective_damage: null` for them (confirmed in data). The TUI's `extract_hand()` sets `card["damage"] = stats.get("damage")` (controller.py line 696), but these cards use `ostydamage`/`calculateddamage` stat keys, not `damage`. So `card["damage"]` is None, and the damage preview in `CardWidget._desc()` (combat.py line 673: `if base_damage is not None`) is entirely skipped. Players see the resolved description text (e.g., "Osty deals 12 damage") but get no Strength/Weak/Vulnerable-modified damage preview highlighting.
+- [x] **Necrobinder Osty-damage Attack cards have no damage preview** — Fixed: `extract_hand()` now falls back to `ostydamage` and `calculateddamage` stat keys when `damage` is not present, enabling damage preview for Osty-damage cards.
 
 ### OrbDisplay does not show Focus value prominently
 
-- [ ] **Defect's Focus power not shown adjacent to OrbDisplay** — In the real STS2 game, Focus is prominently displayed alongside the orb slots since it directly modifies all orb passive/evoke values. In the TUI, Focus only appears in the generic PlayerStats power list (combat.py line 394+) mixed with all other powers. The `OrbDisplay` widget (combat.py line 420) shows individual orb passive/evoke values (which already include Focus from the engine) but does not display the current Focus amount. Players must scan the power list to find their Focus value, making it harder to assess orb effectiveness at a glance.
+- [x] **Defect's Focus power not shown adjacent to OrbDisplay** — Fixed: `OrbDisplay.render()` now scans player powers for Focus and displays `[Focus +N]` prominently before the orb slots.
 
 ### Defect Glass orb passive/evoke decay not explained
 
-- [ ] **Glass orb values decay each turn but TUI does not highlight this** — The Defect data shows Glass orbs losing passive/evoke values over turns (e.g., line 76: passive=4/evoke=8, line 77: passive=3/evoke=6, line 82: passive=2/evoke=4, line 238: passive=0/evoke=0). This decay is a core Glass orb mechanic. The OrbDisplay shows current values but provides no indication that Glass orbs are degrading or at what rate. Players unfamiliar with Glass orbs would not understand why their orb values are changing. The ORB_STYLES entry for Glass uses a generic diamond icon with no tooltip or annotation about the decay mechanic.
+- [x] **Glass orb values decay each turn but TUI does not highlight this** — Fixed: Glass orbs now display a red down-arrow decay indicator after their values in `OrbDisplay.render()`.
 
 ### Necrobinder power name "Doom" context ambiguity
 
-- [ ] **Doom power on player shows enemy-perspective description** — When the Necrobinder has Doom (applied via Borrowed Time, Necrobinder line 361+), the power description reads "At the end of the enemy turn, if it has at least as much Doom as HP, it dies." The "it" refers to the entity with Doom — which in this case is the player. The description is grammatically confusing when shown on the player's power bar, because "it" sounds like it refers to an enemy. This is an engine-side description issue but the TUI could detect Doom on the player and add context.
+- [x] **Doom power on player shows enemy-perspective description** — Fixed: `extract_player()` now detects Doom on the player and rewrites "it dies" -> "you die", "it has" -> "you have" for correct perspective.
 
 ### Shop potion descriptions have unresolved templates
 
-- [ ] **Shop potion descriptions contain unresolved template vars** — Several shop potions in Necrobinder data (line 18, 160) and Defect data (line 69, 73) have descriptions with unresolved templates: "Gain {Energy:energyIcons()}" (Radiant Tincture line 160), "Apply {WeakPower:diff()} Weak and {VulnerablePower:diff()} Vulnerable" (Potion of Binding line 69). The shop screen's `_enrich_potion_description()` handles resolution via game_data lookup, but the fallback path through `resolve_card_description()` needs `vars` or `stats` which shop potions do not provide. The shop enrichment code covers known potions but new potions without game_data entries would show raw templates.
+- [x] **Shop potion descriptions contain unresolved template vars** — Fixed: added "radiant tincture" and "potion of binding" to `_KNOWN_POTION_EXTRA_VARS` in shop.py with their template variable values.
 
 ### Event option vars contain unresolved character references
 
-- [ ] **Event option vars include unresolved character localization keys** — Defect event "Neow" (line 1) options contain vars like `character: "DEFECT.title"`, `characterObject: "DEFECT.titleObject"`, `possessiveAdjective: "DEFECT.possessiveAdjective"`. These are localization keys that the engine does not resolve before sending. If any event description template references `{character}` or `{possessiveAdjective}`, the TUI would display the raw key "DEFECT.title" instead of "the Defect". In the current data, event descriptions do not reference these vars (they use pre-resolved text), so this is a latent issue.
+- [x] **Event option vars include unresolved character localization keys** — Fixed: event screen now pre-resolves localization keys in option vars through `_name_str()` before passing to `resolve_card_description()`. Handles keys like `"DEFECT.title"` -> `"Defect"`.
 
 ### `_name_str()` only handles `.name` suffix, not `.title` or `.description`
 
-- [ ] **`_name_str()` does not generalize unresolved localization key detection** — The function in controller.py (line 42-47) only detects keys ending with `.name` and converts them to readable form. Keys ending with `.title` (like `SYNCHRONIZE_POWER.title`) or `.description` are passed through unchanged. The pattern should be generalized to handle `.title`, `.description`, and potentially other common localization suffixes like `.titleObject`, `.pronounSubject`, etc.
+- [x] **`_name_str()` does not generalize unresolved localization key detection** — Fixed: `_name_str()` now checks for `.name`, `.title`, `.description`, `.titleObject`, `.pronounSubject`, `.possessiveAdjective` suffixes. Also strips `_POWER`/`_RELIC`/`_POTION` type suffixes before title-casing.

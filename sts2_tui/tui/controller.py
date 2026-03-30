@@ -39,11 +39,20 @@ def _name_str(name_obj: Any) -> str:
         lang = get_language()
         return name_obj.get(lang) or name_obj.get("en") or name_obj.get("zh") or str(name_obj)
     s = str(name_obj)
-    # Detect unresolved localization keys like "KAISER_CRAB.name"
-    if s.endswith(".name") and s[0].isupper():
-        key = s[: -len(".name")]
-        # Convert UPPER_SNAKE_CASE to Title Case (e.g. "KAISER_CRAB" -> "Kaiser Crab")
-        return key.replace("_", " ").title()
+    # Detect unresolved localization keys like "KAISER_CRAB.name",
+    # "SYNCHRONIZE_POWER.title", "SYNCHRONIZE_POWER.description", etc.
+    _LOC_SUFFIXES = (".name", ".title", ".description", ".titleObject",
+                     ".pronounSubject", ".possessiveAdjective")
+    for suffix in _LOC_SUFFIXES:
+        if s.endswith(suffix) and s[0].isupper():
+            key = s[: -len(suffix)]
+            # Strip common type suffixes like "_POWER" before formatting
+            for type_suffix in ("_POWER", "_RELIC", "_POTION"):
+                if key.endswith(type_suffix):
+                    key = key[: -len(type_suffix)]
+                    break
+            # Convert UPPER_SNAKE_CASE to Title Case (e.g. "KAISER_CRAB" -> "Kaiser Crab")
+            return key.replace("_", " ").title()
     return s
 
 
@@ -83,7 +92,8 @@ def humanize_stat_key(key: str) -> str:
     return key.replace("_", " ").title()
 
 
-def resolve_card_description(description: str, stats: dict[str, Any] | None) -> str:
+def resolve_card_description(description: str, stats: dict[str, Any] | None,
+                             *, in_combat: bool = False) -> str:
     """Resolve template variables in a card description using the stats dict.
 
     sts2-cli sends descriptions with SmartFormat templates like
@@ -100,7 +110,7 @@ def resolve_card_description(description: str, stats: dict[str, Any] | None) -> 
     - ``{IfUpgraded:show:A|B}`` -> ``B`` (cards are not upgraded by default)
     - ``{Var:plural:singular|plural}`` -> singular/plural based on stat value
     - ``{Stars:starIcons()}`` -> ``N Stars``
-    - ``{InCombat:...|...}`` -> stripped (out-of-combat context)
+    - ``{InCombat:true|false}`` -> true branch when *in_combat*, false branch otherwise
     """
     if not description:
         return ""
@@ -108,8 +118,19 @@ def resolve_card_description(description: str, stats: dict[str, Any] | None) -> 
     # Strip BBCode tags (e.g. [b], [/b], [color=#ff0000]) but preserve
     # energy icons like [2], [3] (pure numeric content in brackets)
     text = re.sub(r"\[/?[a-zA-Z][^\]]*\]", "", text)
-    # Remove {InCombat:...|} blocks (may span newlines and contain nested {})
-    text = re.sub(r"\{InCombat:.*?\|\}", "", text, flags=re.DOTALL)
+    # Handle {InCombat:true_branch|false_branch} blocks.
+    # In combat, show the true_branch; out of combat, show the false_branch.
+    def _incombat_replace(m: re.Match[str]) -> str:
+        content = m.group(1)
+        pipe_idx = content.rfind("|")
+        if pipe_idx >= 0:
+            true_branch = content[:pipe_idx]
+            false_branch = content[pipe_idx + 1:]
+        else:
+            true_branch = content
+            false_branch = ""
+        return true_branch if in_combat else false_branch
+    text = re.sub(r"\{InCombat:(.*?)\}", _incombat_replace, text, flags=re.DOTALL)
     # Remove {IsTargeting:...|} blocks (conditional targeting display)
     text = re.sub(r"\{IsTargeting:.*?\|\}", "", text, flags=re.DOTALL)
     # Handle {IsMultiplayer:true_text|false_text} conditional (always single-player in CLI)
@@ -377,10 +398,19 @@ def extract_enemies(state: dict) -> list[dict]:
     for e in state.get("enemies", []):
         powers = []
         for pw in e.get("powers") or []:
+            raw_name = pw.get("name", "")
+            raw_desc = pw.get("description", "")
+            resolved_name = _name_str(raw_name)
+            # Resolve template variables in power descriptions (e.g. {energyPrefix:energyIcons(1)})
+            resolved_desc = resolve_card_description(raw_desc, None, in_combat=True) if raw_desc else ""
+            # Substitute literal "X" in description with the power's amount
+            pw_amount = pw.get("amount", 0)
+            if "X" in resolved_desc and pw_amount is not None:
+                resolved_desc = re.sub(r'\bX\b', str(pw_amount), resolved_desc)
             powers.append({
-                "name": pw.get("name", ""),
-                "amount": pw.get("amount", 0),
-                "description": pw.get("description", ""),
+                "name": resolved_name,
+                "amount": pw_amount,
+                "description": resolved_desc,
             })
         # Parse intents -- collect ALL intent parts for multi-intent enemies
         intents_raw = e.get("intents") or []
@@ -396,6 +426,7 @@ def extract_enemies(state: dict) -> list[dict]:
         is_stun = False
         is_summon = False
         is_sleep = False
+        is_card_debuff = False
         for it in intents_raw:
             itype = it.get("type", "")
             dmg = it.get("damage")
@@ -438,6 +469,9 @@ def extract_enemies(state: dict) -> list[dict]:
             elif itype == "Summon":
                 is_summon = True
                 intent_parts.append("Summon")
+            elif itype == "CardDebuff":
+                is_card_debuff = True
+                intent_parts.append("Card Debuff")
             elif itype == "Sleep":
                 is_sleep = True
                 intent_parts.append("\U0001f4a4 Zzz")
@@ -464,6 +498,7 @@ def extract_enemies(state: dict) -> list[dict]:
             "is_stun": is_stun,
             "is_summon": is_summon,
             "is_sleep": is_sleep,
+            "is_card_debuff": is_card_debuff,
             "powers": powers,
             "is_dead": hp_val <= 0,
         })
@@ -503,10 +538,24 @@ def extract_player(state: dict) -> dict:
     p = state.get("player", {})
     powers = []
     for pw in state.get("player_powers") or []:
+        raw_name = pw.get("name", "")
+        raw_desc = pw.get("description", "")
+        resolved_name = _name_str(raw_name)
+        # Resolve template variables in power descriptions (e.g. {energyPrefix:energyIcons(1)})
+        # Player powers are in combat context when player_powers is present
+        resolved_desc = resolve_card_description(raw_desc, None, in_combat=True) if raw_desc else ""
+        # Substitute literal "X" in description with the power's amount
+        amount = pw.get("amount", 0)
+        if "X" in resolved_desc and amount is not None:
+            resolved_desc = re.sub(r'\bX\b', str(amount), resolved_desc)
+        # Clarify Doom description context when on the player
+        if resolved_name == "Doom" and "it dies" in resolved_desc:
+            resolved_desc = resolved_desc.replace("it dies", "you die")
+            resolved_desc = resolved_desc.replace("it has", "you have")
         powers.append({
-            "name": pw.get("name", ""),
-            "amount": pw.get("amount", 0),
-            "description": pw.get("description", ""),
+            "name": resolved_name,
+            "amount": amount,
+            "description": resolved_desc,
         })
     potions = []
     for pot in p.get("potions") or []:
@@ -663,7 +712,8 @@ def extract_hand(state: dict) -> list[dict]:
                 if k not in stats:
                     stats[k] = v
         raw_desc = card.get("description", "")
-        resolved_desc = resolve_card_description(raw_desc, stats)
+        # Hand cards are always in combat context
+        resolved_desc = resolve_card_description(raw_desc, stats, in_combat=True)
         cost = card.get("cost", 0)
         # Detect X-cost cards using the RAW description (before template resolution)
         # to avoid false positives from unresolved stat variables that become "X".
@@ -675,7 +725,7 @@ def extract_hand(state: dict) -> list[dict]:
         if after_upgrade_raw:
             up_stats = after_upgrade_raw.get("stats") or {}
             up_desc_raw = after_upgrade_raw.get("description", "")
-            up_desc = resolve_card_description(up_desc_raw, up_stats)
+            up_desc = resolve_card_description(up_desc_raw, up_stats, in_combat=True)
             up_cost = after_upgrade_raw.get("cost", cost)
             after_upgrade = {
                 "cost": up_cost,
@@ -693,7 +743,7 @@ def extract_hand(state: dict) -> list[dict]:
             "type": card.get("type", ""),
             "can_play": card.get("can_play", False),
             "target_type": card.get("target_type", ""),
-            "damage": stats.get("damage"),
+            "damage": stats.get("damage") if stats.get("damage") is not None else (stats.get("ostydamage") if stats.get("ostydamage") is not None else stats.get("calculateddamage")),
             "block": stats.get("block"),
             "stats": stats,
             "description": resolved_desc,
