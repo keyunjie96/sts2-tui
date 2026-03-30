@@ -142,7 +142,7 @@ def build_upgrade_preview(card: dict, after_upgrade: dict) -> str:
 # Maps screen class name -> list of (key, description) tuples
 SCREEN_BINDINGS: dict[str, list[tuple[str, str]]] = {
     "CombatScreen": [
-        ("[1-9]", "Select card"),
+        ("[1-9,0]", "Select card"),
         ("[Left/Right]", "Cycle cards"),
         ("[Tab]", "Cycle target"),
         ("[Up/Down]", "Cycle targets"),
@@ -159,7 +159,7 @@ SCREEN_BINDINGS: dict[str, list[tuple[str, str]]] = {
         ("[Esc]", "Skip reward"),
     ],
     "RestScreen": [
-        ("[1-3]", "Select option"),
+        ("[1-6]", "Select option"),
         ("[Enter]", "Confirm"),
         ("[Esc]", "Leave"),
     ],

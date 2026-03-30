@@ -111,13 +111,16 @@ class GenericScreen(Screen):
                 constraint.append(" ", style="dim")
                 if min_sel is not None and max_sel is not None:
                     if min_sel == max_sel:
-                        constraint.append(f"Select exactly {min_sel} card{'s' if min_sel != 1 else ''}", style="bold cyan")
+                        s = "s" if min_sel != 1 else ""
+                        constraint.append(L("select_exactly").format(min_sel, s), style="bold cyan")
                     else:
-                        constraint.append(f"Select {min_sel}-{max_sel} cards", style="bold cyan")
+                        constraint.append(L("select_range").format(min_sel, max_sel), style="bold cyan")
                 elif max_sel is not None:
-                    constraint.append(f"Select up to {max_sel} card{'s' if max_sel != 1 else ''}", style="bold cyan")
+                    s = "s" if max_sel != 1 else ""
+                    constraint.append(L("select_up_to").format(max_sel, s), style="bold cyan")
                 elif min_sel is not None:
-                    constraint.append(f"Select at least {min_sel} card{'s' if min_sel != 1 else ''}", style="bold cyan")
+                    s = "s" if min_sel != 1 else ""
+                    constraint.append(L("select_at_least").format(min_sel, s), style="bold cyan")
                 t.append_text(constraint)
                 t.append("\n")
         t.append("\n")

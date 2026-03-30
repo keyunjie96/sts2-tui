@@ -239,6 +239,12 @@ LABELS: dict[str, dict[str, str]] = {
         "potion_discard_label": "Discard",
         "potion_discard_slot": "Discard slot",
 
+        # Card select constraints
+        "select_exactly": "Select exactly {0} card{1}",
+        "select_range": "Select {0}-{1} cards",
+        "select_up_to": "Select up to {0} card{1}",
+        "select_at_least": "Select at least {0} card{1}",
+
         # Status bar
         "hp_label": "HP",
         "gold_label": "Gold",
@@ -433,6 +439,12 @@ LABELS: dict[str, dict[str, str]] = {
         "potion_use": "使用",
         "potion_discard_label": "丢弃",
         "potion_discard_slot": "丢弃槽位",
+
+        # Card select constraints
+        "select_exactly": "恰好选择 {0} 张卡牌",
+        "select_range": "选择 {0}-{1} 张卡牌",
+        "select_up_to": "最多选择 {0} 张卡牌",
+        "select_at_least": "至少选择 {0} 张卡牌",
 
         # Status bar
         "hp_label": "生命",

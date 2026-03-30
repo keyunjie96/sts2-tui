@@ -110,6 +110,9 @@ class RestScreen(Screen):
         Binding("1", "select_option(0)", "Option 1", show=False),
         Binding("2", "select_option(1)", "Option 2", show=False),
         Binding("3", "select_option(2)", "Option 3", show=False),
+        Binding("4", "select_option(3)", "Option 4", show=False),
+        Binding("5", "select_option(4)", "Option 5", show=False),
+        Binding("6", "select_option(5)", "Option 6", show=False),
         Binding("enter", "confirm", "Confirm"),
         Binding("escape", "leave", "Leave"),
     ]

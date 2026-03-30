@@ -593,7 +593,9 @@ class CardWidget(Static):
     def _header(self) -> Text:
         c = self.card
         t = Text()
-        t.append(f"[{self.index + 1}]", style="bold bright_yellow")
+        # Keys 1-9 map to cards 0-8; key 0 maps to card 9 (the 10th card)
+        key_label = str(self.index + 1) if self.index < 9 else "0"
+        t.append(f"[{key_label}]", style="bold bright_yellow")
         t.append(" ")
         cost = c.get("cost", 0)
         star_cost = c.get("star_cost")
@@ -873,7 +875,7 @@ class RelicBar(Static):
 
     def _shortcut_text(self) -> Text:
         t = Text(justify="right")
-        t.append("[1-9]", style="bold yellow")
+        t.append("[1-0]", style="bold yellow")
         t.append(f" {L('card')}  ", style="dim")
         t.append("[Tab]", style="bold yellow")
         t.append(f" {L('target_label')}  ", style="dim")
@@ -907,10 +909,11 @@ class PileViewerOverlay(Screen):
         Binding("down,j", "scroll_down", "Down"),
     ]
 
-    def __init__(self, title: str, cards: list[str]) -> None:
+    def __init__(self, title: str, cards: list[str], *, grouped: bool = False) -> None:
         super().__init__()
         self.pile_title = title
         self.cards = cards
+        self.grouped = grouped
 
     def compose(self) -> ComposeResult:
         with Container(id="pile-overlay"):
@@ -933,13 +936,19 @@ class PileViewerOverlay(Screen):
             t.append("\n  (empty)\n", style="dim")
             return t
 
-        # Group duplicate card names and show counts
-        counts = Counter(self.cards)
-        for i, (name, count) in enumerate(sorted(counts.items())):
-            t.append(f"\n  {i + 1}. ", style="dim")
-            t.append(name, style="bold white")
-            if count > 1:
-                t.append(f" x{count}", style="bold yellow")
+        if self.grouped:
+            # Draw pile: group duplicates alphabetically (order is hidden/shuffled)
+            counts = Counter(self.cards)
+            for i, (name, count) in enumerate(sorted(counts.items())):
+                t.append(f"\n  {i + 1}. ", style="dim")
+                t.append(name, style="bold white")
+                if count > 1:
+                    t.append(f" x{count}", style="bold yellow")
+        else:
+            # Discard/exhaust: chronological order, most recent first
+            for i, name in enumerate(reversed(self.cards)):
+                t.append(f"\n  {i + 1}. ", style="dim")
+                t.append(name, style="bold white")
         t.append("\n")
         return t
 
@@ -1421,16 +1430,16 @@ class CombatScreen(Screen):
             return
         self.app.push_screen(GlobalHelpOverlay("CombatScreen"))
 
-    def _show_pile_overlay(self, pile_key: str, title: str) -> None:
+    def _show_pile_overlay(self, pile_key: str, title: str, *, grouped: bool = False) -> None:
         """Open a PileViewerOverlay for the given pile."""
         if any(isinstance(s, PileViewerOverlay) for s in self.app.screen_stack):
             return
         piles = extract_pile_contents(self.state)
         cards = piles.get(pile_key, [])
-        self.app.push_screen(PileViewerOverlay(title, cards))
+        self.app.push_screen(PileViewerOverlay(title, cards, grouped=grouped))
 
     def action_view_draw_pile(self) -> None:
-        self._show_pile_overlay("draw", L("draw_pile"))
+        self._show_pile_overlay("draw", L("draw_pile"), grouped=True)
 
     def action_view_discard_pile(self) -> None:
         self._show_pile_overlay("discard", L("discard_pile"))
