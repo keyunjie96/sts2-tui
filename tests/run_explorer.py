@@ -48,6 +48,13 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
         "decisions_seen": set(), "victory": False, "crash": None,
     }
 
+    async def send_with_timeout(cmd: dict, timeout: float = 15.0) -> dict:
+        """Send a command with a timeout to avoid hanging forever."""
+        try:
+            return await asyncio.wait_for(bridge.send(cmd), timeout=timeout)
+        except asyncio.TimeoutError:
+            raise BridgeError(f"bridge.send timed out after {timeout}s")
+
     def log_state(state: dict, fout):
         nonlocal lines_written
         fout.write(json.dumps(state) + "\n")
@@ -80,7 +87,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                 if floor_num: stats["max_floor"] = max(stats["max_floor"], floor_num)
 
                 if state.get("type") == "error":
-                    state = await bridge.send({"cmd": "action", "action": "proceed"})
+                    state = await send_with_timeout({"cmd": "action", "action": "proceed"})
                     log_state(state, fout)
                     continue
 
@@ -99,7 +106,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                     # Try escaping
                     for escape in ["proceed", "leave_room", "skip_card_reward",
                                    "skip_select", "skip_potion_reward"]:
-                        state = await bridge.send({"cmd": "action", "action": escape})
+                        state = await send_with_timeout({"cmd": "action", "action": escape})
                         log_state(state, fout)
                         if state.get("decision") != decision:
                             stuck_count = 0
@@ -123,7 +130,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                 try:
                     if decision == "map_select":
                         pick = pick_map_node(state, character)
-                        state = await bridge.send({"cmd": "action", "action": "select_map_node",
+                        state = await send_with_timeout({"cmd": "action", "action": "select_map_node",
                                                    "args": {"col": pick["col"], "row": pick["row"]}})
                         potion_used_this_combat = False
                         failed_card_ids.clear()
@@ -142,7 +149,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                                             args["target_index"] = find_highest_hp_enemy(enemies)
                                         else:
                                             args["target_index"] = find_lowest_hp_enemy(enemies)
-                                    state = await bridge.send({"cmd": "action", "action": "use_potion", "args": args})
+                                    state = await send_with_timeout({"cmd": "action", "action": "use_potion", "args": args})
                                     log_state(state, fout)
                                     potion_used_this_combat = True
                                     continue
@@ -155,22 +162,22 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
 
                             # Skip known-broken cards
                             if card_id in failed_card_ids:
-                                state = await bridge.send({"cmd": "action", "action": "end_turn"})
+                                state = await send_with_timeout({"cmd": "action", "action": "end_turn"})
                                 log_state(state, fout)
                                 continue
 
                             args = {"card_index": card_idx}
                             if target_idx is not None:
                                 args["target_index"] = target_idx
-                            result_state = await bridge.send({"cmd": "action", "action": "play_card", "args": args})
+                            result_state = await send_with_timeout({"cmd": "action", "action": "play_card", "args": args})
                             if result_state.get("type") == "error":
                                 if card_id:
                                     failed_card_ids.add(card_id)
-                                state = await bridge.send({"cmd": "action", "action": "proceed"})
+                                state = await send_with_timeout({"cmd": "action", "action": "proceed"})
                             else:
                                 state = result_state
                         else:
-                            state = await bridge.send({"cmd": "action", "action": "end_turn"})
+                            state = await send_with_timeout({"cmd": "action", "action": "end_turn"})
 
                     elif decision == "card_reward":
                         # Handle potions first
@@ -178,24 +185,24 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                         if potion_rewards:
                             if not state.get("potion_slots_full", False):
                                 try:
-                                    state = await bridge.send({"cmd": "action", "action": "collect_potion_reward",
+                                    state = await send_with_timeout({"cmd": "action", "action": "collect_potion_reward",
                                                                "args": {"potion_index": 0}})
                                 except BridgeError:
-                                    state = await bridge.send({"cmd": "action", "action": "skip_potion_reward"})
+                                    state = await send_with_timeout({"cmd": "action", "action": "skip_potion_reward"})
                             else:
-                                state = await bridge.send({"cmd": "action", "action": "skip_potion_reward"})
+                                state = await send_with_timeout({"cmd": "action", "action": "skip_potion_reward"})
                             log_state(state, fout)
                             continue
                         cards = state.get("cards", [])
                         if cards:
                             pick = pick_card_reward(state, character)
                             if pick is not None:
-                                state = await bridge.send({"cmd": "action", "action": "select_card_reward",
+                                state = await send_with_timeout({"cmd": "action", "action": "select_card_reward",
                                                            "args": {"card_index": pick}})
                             else:
-                                state = await bridge.send({"cmd": "action", "action": "skip_card_reward"})
+                                state = await send_with_timeout({"cmd": "action", "action": "skip_card_reward"})
                         else:
-                            state = await bridge.send({"cmd": "action", "action": "skip_card_reward"})
+                            state = await send_with_timeout({"cmd": "action", "action": "skip_card_reward"})
 
                     elif decision == "event_choice":
                         event_name = get_text(state.get("event_name", "")).lower()
@@ -204,18 +211,18 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                         else:
                             pick = pick_event_option(state, character)
                         if pick:
-                            state = await bridge.send({"cmd": "action", "action": "choose_option",
+                            state = await send_with_timeout({"cmd": "action", "action": "choose_option",
                                                        "args": {"option_index": pick["index"]}})
                         else:
-                            state = await bridge.send({"cmd": "action", "action": "leave_room"})
+                            state = await send_with_timeout({"cmd": "action", "action": "leave_room"})
 
                     elif decision == "rest_site":
                         pick = pick_rest_option(state, character)
                         if pick:
-                            state = await bridge.send({"cmd": "action", "action": "choose_option",
+                            state = await send_with_timeout({"cmd": "action", "action": "choose_option",
                                                        "args": {"option_index": pick["index"]}})
                         else:
-                            state = await bridge.send({"cmd": "action", "action": "leave_room"})
+                            state = await send_with_timeout({"cmd": "action", "action": "leave_room"})
 
                     elif decision == "card_select":
                         cards = state.get("cards", [])
@@ -223,7 +230,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                             room = ctx.get("room_type", "")
                             if room == "RestSite":
                                 idx = pick_upgrade_target(cards, character)
-                                state = await bridge.send({"cmd": "action", "action": "select_cards",
+                                state = await send_with_timeout({"cmd": "action", "action": "select_cards",
                                                            "args": {"indices": str(idx)}})
                             elif room in ("Shop", "Merchant", "MerchantRoom"):
                                 # Remove worst card (strikes/curses first)
@@ -243,13 +250,13 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                                     if s < worst_score:
                                         worst_score = s
                                         worst_idx = card.get("index", 0)
-                                state = await bridge.send({"cmd": "action", "action": "select_cards",
+                                state = await send_with_timeout({"cmd": "action", "action": "select_cards",
                                                            "args": {"indices": str(worst_idx)}})
                             else:
-                                state = await bridge.send({"cmd": "action", "action": "select_cards",
+                                state = await send_with_timeout({"cmd": "action", "action": "select_cards",
                                                            "args": {"indices": "0"}})
                         else:
-                            state = await bridge.send({"cmd": "action", "action": "skip_select"})
+                            state = await send_with_timeout({"cmd": "action", "action": "skip_select"})
 
                     elif decision == "shop":
                         # Async shop logic (mirrors sts2-agent's handle_shop)
@@ -259,7 +266,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                         wants = CARD_WANTS.get(character, set())
                         # Try card removal
                         if state.get("card_removal_available") and gold >= state.get("card_removal_cost", 75) and deck_size > 8:
-                            result = await bridge.send({"cmd": "action", "action": "remove_card", "args": {}})
+                            result = await send_with_timeout({"cmd": "action", "action": "remove_card", "args": {}})
                             log_state(result, fout)
                             if result.get("decision") != "shop":
                                 state = result
@@ -275,7 +282,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                             ctype = card.get("type", "")
                             name_lower = get_text(card.get("name", "")).lower()
                             if (ctype == "Power" or name_lower in wants) and cost <= gold:
-                                result = await bridge.send({"cmd": "action", "action": "buy_card",
+                                result = await send_with_timeout({"cmd": "action", "action": "buy_card",
                                                             "args": {"card_index": card["index"]}})
                                 log_state(result, fout)
                                 if result.get("decision") != "shop":
@@ -287,14 +294,14 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                                 bought = True
                                 break
                         if not bought or state.get("decision") == "shop":
-                            state = await bridge.send({"cmd": "action", "action": "leave_room"})
+                            state = await send_with_timeout({"cmd": "action", "action": "leave_room"})
 
                     elif decision == "bundle_select":
-                        state = await bridge.send({"cmd": "action", "action": "select_bundle",
+                        state = await send_with_timeout({"cmd": "action", "action": "select_bundle",
                                                    "args": {"bundle_index": 0}})
 
                     else:
-                        state = await bridge.send({"cmd": "action", "action": "proceed"})
+                        state = await send_with_timeout({"cmd": "action", "action": "proceed"})
 
                     log_state(state, fout)
 
@@ -304,15 +311,15 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                     log_state({"type": "error_recovery", "step": step, "error": err_msg}, fout)
                     try:
                         # Try proceed to move past the error
-                        state = await bridge.send({"cmd": "action", "action": "proceed"})
+                        state = await send_with_timeout({"cmd": "action", "action": "proceed"})
                         log_state(state, fout)
                     except BridgeError:
                         try:
-                            state = await bridge.send({"cmd": "action", "action": "skip_potion_reward"})
+                            state = await send_with_timeout({"cmd": "action", "action": "skip_potion_reward"})
                             log_state(state, fout)
                         except BridgeError:
                             try:
-                                state = await bridge.send({"cmd": "action", "action": "leave_room"})
+                                state = await send_with_timeout({"cmd": "action", "action": "leave_room"})
                                 log_state(state, fout)
                             except BridgeError:
                                 stats["crash"] = err_msg
@@ -320,7 +327,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
                 except Exception as e:
                     # Strategy function failed — fallback to proceed
                     try:
-                        state = await bridge.send({"cmd": "action", "action": "proceed"})
+                        state = await send_with_timeout({"cmd": "action", "action": "proceed"})
                         log_state(state, fout)
                     except BridgeError:
                         stats["crash"] = str(e)
