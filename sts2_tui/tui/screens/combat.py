@@ -237,7 +237,6 @@ class EnemyWidget(Static):
 
     def _defeated_text(self) -> Text:
         t = Text(justify="center")
-        t.append(f"[{self.index + 1}] ", style="dim")
         t.append(self.enemy["name"], style="dim strike")
         t.append(f"  {L('defeated')}", style="bold green")
         return t
@@ -1164,9 +1163,18 @@ class CombatScreen(Screen):
         living = [e for e in enemies if not e.get("is_dead")]
         # Skip targeting indicator when there's only 1 enemy (auto-selected)
         show_target = len(living) > 1
+        # Build a mapping from living enemies to their target index
+        living_idx = 0
         widgets = []
-        for i, e in enumerate(living):
-            widgets.append(EnemyWidget(e, i, is_targeted=(show_target and i == self.selected_target)))
+        for e in enemies:
+            if e.get("is_dead"):
+                # Keep dead enemy slot with "defeated" indicator to prevent
+                # layout shift when enemies die.
+                widgets.append(EnemyWidget(e, -1, is_targeted=False))
+            else:
+                is_target = show_target and living_idx == self.selected_target
+                widgets.append(EnemyWidget(e, living_idx, is_targeted=is_target))
+                living_idx += 1
         return widgets
 
     async def _refresh_display(self) -> None:

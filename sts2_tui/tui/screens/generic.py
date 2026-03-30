@@ -43,6 +43,15 @@ class GenericScreen(Screen):
         Binding("up,k", "move_selection(-1)", "Up", show=False),
         Binding("down,j", "move_selection(1)", "Down", show=False),
         Binding("space", "toggle_selection", "Toggle", show=False),
+        Binding("1", "select_option(0)", "Option 1", show=False),
+        Binding("2", "select_option(1)", "Option 2", show=False),
+        Binding("3", "select_option(2)", "Option 3", show=False),
+        Binding("4", "select_option(3)", "Option 4", show=False),
+        Binding("5", "select_option(4)", "Option 5", show=False),
+        Binding("6", "select_option(5)", "Option 6", show=False),
+        Binding("7", "select_option(6)", "Option 7", show=False),
+        Binding("8", "select_option(7)", "Option 8", show=False),
+        Binding("9", "select_option(8)", "Option 9", show=False),
         Binding("enter", "proceed", "Proceed"),
         Binding("escape", "leave", "Leave"),
     ]
@@ -251,6 +260,26 @@ class GenericScreen(Screen):
             viewport.scroll_to(y=target_scroll, animate=False)
         except Exception:
             pass
+
+    def action_select_option(self, index: int) -> None:
+        """Select an option by number key (matching the [1], [2] labels)."""
+        if not self.options or index < 0 or index >= len(self.options):
+            return
+        if self._is_multi_select:
+            # In multi-select mode, toggle the item
+            self.selected = index
+            self.action_toggle_selection()
+        else:
+            self.selected = index
+            # Re-render to show selection
+            try:
+                viewport = self.query_one("#map-viewport")
+                for child in viewport.children:
+                    if isinstance(child, Static):
+                        child.update(self._options_text())
+                        break
+            except Exception:
+                pass
 
     def action_toggle_selection(self) -> None:
         """Toggle the current item in/out of the multi-select set."""

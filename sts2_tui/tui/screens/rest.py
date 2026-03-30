@@ -236,6 +236,11 @@ class RestScreen(Screen):
     async def action_leave(self) -> None:
         if self._busy:
             return
+        # Rest sites are mandatory -- the player must choose an option.
+        # Block Esc when there are still options to choose from.
+        if self.options:
+            self.notify(L("rest_must_choose"), severity="warning")
+            return
         self._busy = True
         try:
             state = await self.controller.leave_room()

@@ -174,8 +174,13 @@ class SlsApp(App):
         if transition_key:
             self.notify(L(transition_key), timeout=2)
 
-        # Pop all screens except the base screen before pushing a new one
-        while len(self.screen_stack) > 1:
+        # Pop back to the base screen before pushing a new game screen.
+        # Use a bounded loop to avoid infinite pop in edge cases (e.g. if
+        # an overlay's dismiss handler pushes another screen).
+        max_pops = len(self.screen_stack)
+        for _ in range(max_pops):
+            if len(self.screen_stack) <= 1:
+                break
             self.pop_screen()
 
         match decision:
@@ -258,7 +263,9 @@ class SlsApp(App):
 
         while len(self.screen_stack) > 1:
             self.pop_screen()
-        self.mount(Static(t))
+        # Mount on the current screen (not the App) so the widget has a
+        # proper parent and gets cleaned up on next screen transition.
+        self.screen.mount(Static(t, id="game-over-display"))
 
     # ------------------------------------------------------------------
     # Message handlers for screen transitions

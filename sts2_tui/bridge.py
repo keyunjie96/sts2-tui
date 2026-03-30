@@ -180,7 +180,7 @@ class EngineBridge:
             [self._dotnet, "run", "--no-build", "--project", project_csproj],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
             bufsize=1,
             cwd=str(self._sts2_dir),
@@ -445,16 +445,10 @@ class EngineBridge:
             raw = proc.stdout.readline()  # type: ignore[union-attr]
             if not raw:
                 # EOF — process likely crashed.
-                stderr_snippet = ""
-                try:
-                    stderr_snippet = (proc.stderr.read() or "")[:500]  # type: ignore[union-attr]
-                except Exception:
-                    pass
-                # Write crash report to log file for debugging
+                # stderr is DEVNULL to avoid pipe deadlocks, so no snippet.
                 exit_code = proc.poll()
                 crash_msg = (
                     f"sts2-cli crashed (exit code {exit_code})\n"
-                    f"stderr: {stderr_snippet}\n"
                 )
                 try:
                     crash_log = Path.home() / ".sts2-tui-crash.log"
@@ -467,7 +461,7 @@ class EngineBridge:
                     pass
                 raise BridgeError(
                     f"sts2-cli: EOF on stdout (exit code {exit_code}). "
-                    f"Crash log: ~/.sts2-tui-crash.log  stderr: {stderr_snippet}"
+                    f"Crash log: ~/.sts2-tui-crash.log"
                 )
             line = raw.strip()
             if line.startswith("{"):

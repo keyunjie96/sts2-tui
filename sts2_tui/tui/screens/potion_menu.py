@@ -78,11 +78,18 @@ class PotionMenuOverlay(Screen):
     def __init__(
         self,
         potions: list[dict[str, Any]],
-        max_slots: int = 3,
+        max_slots: int | None = None,
         enemies: list[dict[str, Any]] | None = None,
     ) -> None:
         super().__init__()
         self.potions = potions
+        # Derive slot count from the highest potion index, falling back to
+        # len(potions) or the STS2 default of 3.
+        if max_slots is None:
+            if potions:
+                max_slots = max(p.get("index", i) for i, p in enumerate(potions)) + 1
+            else:
+                max_slots = 3
         self.max_slots = max(max_slots, len(potions))
         self.enemies = [e for e in (enemies or []) if not e.get("is_dead")]
         self._mode: str = "idle"  # idle | targeting | discard

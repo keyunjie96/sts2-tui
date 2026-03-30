@@ -83,25 +83,6 @@ Screen {
     text-style: bold;
 }
 
-.intent-attack {
-    color: #ff4444;
-}
-
-.intent-defend {
-    color: #44bbff;
-}
-
-.intent-buff {
-    color: #44ff88;
-}
-
-.intent-debuff {
-    color: #cc44ff;
-}
-
-.intent-unknown {
-    color: $text-muted;
-}
 
 .enemy-powers {
     text-align: center;
@@ -157,10 +138,6 @@ Screen {
     padding: 0 1;
 }
 
-.energy-display {
-    text-style: bold;
-    color: $warning;
-}
 
 #pile-counts {
     width: auto;
@@ -251,15 +228,6 @@ Screen {
     overflow-y: auto;
 }
 
-.card-cost {
-    text-style: bold;
-    color: $warning;
-}
-
-.card-index {
-    text-style: bold;
-    color: $accent;
-}
 
 /* -- Footer / relic bar -- */
 #relic-bar {
@@ -610,10 +578,6 @@ Screen {
     overflow-y: auto;
 }
 
-.pile-card-row {
-    height: 1;
-    padding: 0 1;
-}
 
 #pile-footer {
     height: 2;

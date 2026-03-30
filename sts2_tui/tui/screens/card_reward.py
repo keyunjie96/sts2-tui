@@ -17,6 +17,7 @@ from textual.widgets import Static
 from textual.reactive import reactive
 from rich.text import Text
 
+from sts2_tui.bridge import BridgeError
 from sts2_tui.tui.controller import GameController, _name_str, resolve_card_description, extract_reward_cards
 from sts2_tui.tui.i18n import L
 from sts2_tui.tui.shared import CARD_TYPE_COLORS, KEYWORD_ICONS, RARITY_COLORS, build_status_footer, build_upgrade_preview
@@ -354,6 +355,8 @@ class CardRewardScreen(Screen):
 
             # Update local state from the response
             self._update_from_state(state)
+        except BridgeError as exc:
+            self.notify(f"Bridge error: {exc}", severity="error")
         finally:
             self._busy = False
 
@@ -370,6 +373,8 @@ class CardRewardScreen(Screen):
                 return
 
             self._update_from_state(state)
+        except BridgeError as exc:
+            self.notify(f"Bridge error: {exc}", severity="error")
         finally:
             self._busy = False
 
