@@ -376,7 +376,9 @@ class PlayerStats(Static):
 
         energy = player.get("energy", 0)
         max_energy = player.get("max_energy", 3)
-        t.append(f" [{energy}/{max_energy}]", style="bold yellow")
+        # Highlight energy in bright green when over max (e.g. from potions)
+        energy_style = "bold bright_green" if energy > max_energy else "bold yellow"
+        t.append(f" [{energy}/{max_energy}]", style=energy_style)
         t.append(f" {L('energy')}", style="dim yellow")
 
         block = player.get("block", 0)
