@@ -69,6 +69,9 @@ class PotionMenuOverlay(Screen):
         Binding("4", "slot(3)", "Slot 4", show=False),
         Binding("5", "slot(4)", "Slot 5", show=False),
         Binding("tab", "cycle_target", "Next target", show=False),
+        Binding("shift+tab", "cycle_target_back", "Prev target", show=False),
+        Binding("up", "cycle_target_back", "Prev target", show=False),
+        Binding("down", "cycle_target", "Next target", show=False),
         Binding("enter", "confirm_target", "Confirm target", show=False),
     ]
 
@@ -229,6 +232,11 @@ class PotionMenuOverlay(Screen):
     def action_cycle_target(self) -> None:
         if self._mode == "targeting" and self.enemies:
             self._target_index = (self._target_index + 1) % len(self.enemies)
+            self._refresh_content()
+
+    def action_cycle_target_back(self) -> None:
+        if self._mode == "targeting" and self.enemies:
+            self._target_index = (self._target_index - 1) % len(self.enemies)
             self._refresh_content()
 
     def action_confirm_target(self) -> None:

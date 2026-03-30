@@ -140,8 +140,8 @@ class SlsApp(App):
         """Push the appropriate screen based on the response decision type."""
         from sts2_tui.tui.i18n import L
 
-        if state.get("type") == "error":
-            error_msg = state.get("message", "Engine error")
+        if state.get("type") in ("error", "error_recovery"):
+            error_msg = state.get("message") or state.get("error") or "Engine error"
             self.push_screen(ErrorRecoveryScreen(error_msg))
             return
 

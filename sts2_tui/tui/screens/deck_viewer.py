@@ -56,10 +56,18 @@ def _format_deck_card(card: dict) -> Text:
     # Name color based on type
     _, color = _TYPE_COLORS.get(ctype, ("?", "white"))
 
+    star_cost = card.get("star_cost")
+
     t = Text()
-    # Cost
+    # Cost (with star_cost for Regent cards)
     cost_str = str(cost) if cost >= 0 else "X"
-    t.append(f"  ({cost_str}) ", style="bold yellow")
+    if star_cost is not None:
+        if cost >= 0:
+            t.append(f"  ({cost_str}+\u2605{star_cost}) ", style="bold bright_yellow")
+        else:
+            t.append(f"  (\u2605{star_cost}) ", style="bold bright_yellow")
+    else:
+        t.append(f"  ({cost_str}) ", style="bold yellow")
     # Name (with + suffix if upgraded)
     display_name = f"{name}+" if upgraded else name
     t.append(display_name, style=f"bold {color}")

@@ -159,7 +159,7 @@ class RestScreen(Screen):
         return title
 
     def _footer_text(self) -> Text:
-        max_idx = min(len(self.options), 3)
+        max_idx = min(len(self.options), 6)
         bindings = Text()
         for i in range(max_idx):
             bindings.append(f"[{i + 1}]", style="bold yellow")

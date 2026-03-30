@@ -240,7 +240,7 @@ class GlobalHelpOverlay(Screen):
 
                     general = [
                         ("[D]", L("view_deck")),
-                        ("[R]", "View relics & potions"),
+                        ("[R]", L("view_relics_potions")),
                         ("[Esc]", L("back_close")),
                         ("[Q]", L("quit_game")),
                         ("[?/F1]", L("this_help")),

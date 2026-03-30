@@ -47,13 +47,16 @@ class EventOptionWidget(Static):
         title = _name_str(opt.get("title")) or f"Option {self.display_index + 1}"
         desc = opt.get("description", "")
         is_locked = opt.get("is_locked", False)
+        is_enabled = opt.get("is_enabled", True)
 
         title_text = Text(justify="center")
         title_text.append(f"[{self.display_index + 1}] ", style="bold yellow")
-        color = "dim" if is_locked else "bold white"
+        color = "dim" if (is_locked or not is_enabled) else "bold white"
         title_text.append(title, style=color)
         if is_locked:
             title_text.append(f" ({L('locked')})", style="dim red")
+        elif not is_enabled:
+            title_text.append(f" ({L('unavailable')})", style="dim red")
         yield Static(title_text, classes="rest-option-title")
 
         if desc:
@@ -187,6 +190,9 @@ class EventScreen(Screen):
             if opt.get("is_locked", False):
                 self.notify("That option is locked.", severity="warning")
                 return
+            if not opt.get("is_enabled", True):
+                self.notify("That option is unavailable.", severity="warning")
+                return
             self.selected = index
 
     async def action_confirm(self) -> None:
@@ -199,6 +205,9 @@ class EventScreen(Screen):
         opt = self.options[self.selected]
         if opt.get("is_locked", False):
             self.notify("That option is locked.", severity="warning")
+            return
+        if not opt.get("is_enabled", True):
+            self.notify("That option is unavailable.", severity="warning")
             return
 
         option_index = opt.get("index", self.selected)

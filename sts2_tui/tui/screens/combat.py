@@ -81,6 +81,9 @@ class TopBar(Static):
         # Mini HP bar (10 chars wide)
         bar_w = 10
         filled = int(ratio * bar_w)
+        # Ensure at least 1 filled char while the player is alive
+        if hp > 0:
+            filled = max(1, filled)
         empty = bar_w - filled
 
         room_type = ctx.get("room_type", "")
@@ -866,7 +869,11 @@ class RelicBar(Static):
         if not relics:
             t.append("(none)", style="dim")
             return t
-        for i, r in enumerate(relics):
+        # Show relics with overflow indicator when there are too many
+        # Approximate: each relic ~15 chars + separator; cap at ~6 visible
+        max_visible = min(len(relics), 6)
+        for i in range(max_visible):
+            r = relics[i]
             if i > 0:
                 t.append(" | ", style="dim")
             t.append(r["name"], style="bold cyan")
@@ -874,6 +881,11 @@ class RelicBar(Static):
             counter = r.get("counter", -1)
             if isinstance(counter, int) and counter >= 0:
                 t.append(f" [{counter}]", style="bold yellow")
+        if len(relics) > max_visible:
+            t.append(f" ...+{len(relics) - max_visible}", style="dim")
+        elif len(relics) > 3:
+            # Even within 6, hint that R shows full list
+            t.append("  [R]", style="dim yellow")
         return t
 
     def _shortcut_text(self) -> Text:
