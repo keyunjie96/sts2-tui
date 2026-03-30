@@ -44,7 +44,7 @@ class EventOptionWidget(Static):
 
     def compose(self) -> ComposeResult:
         opt = self.option
-        title = _name_str(opt.get("title")) or f"Option {self.display_index + 1}"
+        title = _resolve_inline_loc_keys(_name_str(opt.get("title"))) or f"Option {self.display_index + 1}"
         desc = opt.get("description", "")
         is_locked = opt.get("is_locked", False)
         is_enabled = opt.get("is_enabled", True)
