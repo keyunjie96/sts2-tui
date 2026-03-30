@@ -68,6 +68,12 @@ BUFF_NAMES: frozenset[str] = frozenset({
     "Unmovable", "Vigor",
     # Enemy powers that benefit the player or alert about enemy capability
     "Slow", "Hard to Kill",
+    # v4 Round 1 additions
+    "Calcify", "Foregone Conclusion", "Lethality", "Machine Learning",
+    "One-Two Punch", "Orbit", "Reaper Form", "Reflect",
+    "Void Form", "Well-Laid Plans",
+    # Enemy powers (v4 Round 1)
+    "Grapple", "Personal Hive",
 })
 
 
@@ -321,6 +327,7 @@ class EnemyWidget(Static):
             ("is_summon", "\u2728", "Summon", "bold white"),
             ("is_sleep", "\U0001f4a4", "Zzz", "dim cyan"),
             ("is_card_debuff", "\U0001f0cf", "Card Debuff", "bold magenta"),
+            ("is_escape", "\U0001f3c3", "Escape", "bold yellow"),
         ]
 
         secondary_shown = False

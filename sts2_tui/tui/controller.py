@@ -409,12 +409,15 @@ def extract_enemies(state: dict) -> list[dict]:
     """Normalise enemy data from a combat_play response."""
     result = []
     for e in state.get("enemies", []):
+        enemy_name = _name_str(e.get("name"))
         powers = []
         for pw in e.get("powers") or []:
             # CLI resolves most power descriptions, but some still contain
             # unresolved templates (e.g. {energyPrefix:energyIcons(1)}).
             # Run through resolve_card_description as a fallback.
             raw_desc = pw.get("description", "")
+            # Substitute {OwnerName} with the enemy's name before template resolution
+            raw_desc = re.sub(r"\{OwnerName\}", enemy_name, raw_desc)
             resolved_desc = resolve_card_description(raw_desc, {"amount": pw.get("amount", 0)})
             powers.append({
                 "name": _name_str(pw.get("name", "")),
@@ -436,6 +439,7 @@ def extract_enemies(state: dict) -> list[dict]:
         is_summon = False
         is_sleep = False
         is_card_debuff = False
+        is_escape = False
         for it in intents_raw:
             itype = it.get("type", "")
             dmg = it.get("damage")
@@ -484,6 +488,9 @@ def extract_enemies(state: dict) -> list[dict]:
             elif itype == "Sleep":
                 is_sleep = True
                 intent_parts.append("\U0001f4a4 Zzz")
+            elif itype == "Escape":
+                is_escape = True
+                intent_parts.append("\U0001f3c3 Escape")
             elif itype:
                 intent_parts.append(itype)
         intent_summary = " + ".join(intent_parts) if intent_parts else ""
@@ -508,6 +515,7 @@ def extract_enemies(state: dict) -> list[dict]:
             "is_summon": is_summon,
             "is_sleep": is_sleep,
             "is_card_debuff": is_card_debuff,
+            "is_escape": is_escape,
             "powers": powers,
             "is_dead": hp_val <= 0,
         })

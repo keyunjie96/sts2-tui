@@ -221,11 +221,29 @@ class SlsApp(App):
         else:
             t.append(f"\n\n  {L('game_over')}  \n\n", style="bold white on dark_red")
 
-        # Run summary
-        t.append(f"\n  {L('act')} {act}, {L('floor')} {floor}\n", style="bold white")
+        # Run summary — include room type and boss/enemy name when available
+        room_type = ctx.get("room_type", "")
+        boss_info = ctx.get("boss", {})
+        boss_name = boss_info.get("name", "") if isinstance(boss_info, dict) else ""
+        floor_text = f"{L('act')} {act}, {L('floor')} {floor}"
+        if room_type:
+            floor_text += f" ({room_type})"
+        t.append(f"\n  {floor_text}\n", style="bold white")
+        if boss_name and not victory:
+            t.append(f"  vs. {boss_name}\n", style="bold bright_red")
         t.append(f"\n  HP: {hp}/{max_hp}", style="white")
         t.append(f"  |  Gold: {gold}", style="bold yellow")
         t.append(f"  |  {L('deck')}: {deck_size}\n", style="white")
+
+        # Potions held
+        potions = player_data.get("potions", [])
+        if potions:
+            t.append(f"\n  Potions ({len(potions)}): ", style="dim")
+            for i, p in enumerate(potions):
+                if i > 0:
+                    t.append(", ", style="dim")
+                t.append(p.get("name", "?"), style="bold bright_magenta")
+            t.append("\n")
 
         # Relics collected
         if relics:

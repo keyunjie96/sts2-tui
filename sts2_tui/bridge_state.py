@@ -267,6 +267,8 @@ def _parse_intent(intents_raw: list[dict[str, Any]] | None) -> MonsterIntent | N
             intent_name_parts.append(itype)
         elif itype == "Sleep":
             intent_name_parts.append("Sleep")
+        elif itype == "Escape":
+            intent_name_parts.append("Escape")
         elif itype == "Hidden":
             is_unknown = True
             intent_name_parts.append("Unknown")
