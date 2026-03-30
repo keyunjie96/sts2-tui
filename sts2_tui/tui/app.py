@@ -229,7 +229,7 @@ class SlsApp(App):
         if room_type:
             floor_text += f" ({room_type})"
         t.append(f"\n  {floor_text}\n", style="bold white")
-        if boss_name and not victory:
+        if boss_name and not victory and room_type == "Boss":
             t.append(f"  vs. {boss_name}\n", style="bold bright_red")
         t.append(f"\n  HP: {hp}/{max_hp}", style="white")
         t.append(f"  |  Gold: {gold}", style="bold yellow")

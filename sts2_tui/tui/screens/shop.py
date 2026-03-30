@@ -161,7 +161,8 @@ def _load_relic_data() -> dict[str, dict]:
 _KNOWN_RELIC_VARS: dict[str, dict[str, int]] = {
     "lantern": {"energy": 1},
     "lucky fysh": {"gold": 10},
-    "lee's waffle": {"maxhp": 7},
+    "lees waffle": {"maxhp": 7},  # normalized (no apostrophe) for _normalize_name lookup
+    "lee's waffle": {"maxhp": 7},  # original form for name.lower() lookup
     "pen nib": {"damage": 2},
     "bag of marbles": {"vulnerablepower": 1, "vulnerable": 1},
     "data disk": {"focuspower": 1, "focus": 1},

@@ -346,9 +346,73 @@ def resolve_card_description(description: str, stats: dict[str, Any] | None,
         return ""  # strip unresolvable nested templates
 
     text = re.sub(r"\{([^{}]*\{[^{}]*\}[^{}]*)\}", _replace_nested, text)
+
+    # --- Post-resolution cleanup for engine partial-resolution artifacts ---
+    # The engine's SmartFormat resolver sometimes partially resolves templates,
+    # leaving orphan closing braces, pipe branches, and concatenated values.
+    # These patterns cannot be fixed by the template resolver above because the
+    # opening '{' has already been consumed by the engine.
+
+    # Strip residual plural/cond fragments like ".times)|}" or "Exhausted.times)|}"
+    text = re.sub(r"\.\w*\)\|?\}", ".", text)
+
+    # Strip orphan "{ word}" patterns (opening brace with space, e.g. "{ cards}")
+    text = re.sub(r"\{\s+\w+\}", "", text)
+
+    # Strip orphan "|branch}" patterns: "Attacks are|Attack is}" -> "Attacks are"
+    # Keep the text before the pipe, discard the pipe-branch and orphan brace.
+    text = re.sub(r"\|[^|}]*\}", "", text)
+
+    # Strip orphan " word}" where a space-delimited word ends with "}" and
+    # there is no matching "{" earlier.  Only strip if no "{" exists earlier
+    # on the same line (to avoid stripping legitimate template content).
+    def _strip_orphan_word_brace(m: re.Match[str]) -> str:
+        line_start = text.rfind("\n", 0, m.start())
+        preceding = text[line_start + 1:m.start()] if line_start >= 0 else text[:m.start()]
+        if "{" not in preceding:
+            return " "  # replace "word}" with space
+        return m.group(0)
+    text = re.sub(r"(?<=\s)\w+\}", _strip_orphan_word_brace, text)
+
+    # Strip orphan bare "}" that follow a word char with no matching "{"
+    # Check that no "{" exists on the same line before this "}"
+    def _strip_orphan_brace(m: re.Match[str]) -> str:
+        line_start = text.rfind("\n", 0, m.start())
+        preceding = text[line_start + 1:m.start()] if line_start >= 0 else text[:m.start()]
+        if "{" not in preceding:
+            return m.group(1)  # keep the preceding char, drop the "}"
+        return m.group(0)
+    text = re.sub(r"(\w)\}", _strip_orphan_brace, text)
+
+    # Strip orphan "}" preceded by a space: "times }that" -> "times that"
+    text = re.sub(r"\s+\}", " ", text)
+
+    # Fix engine double-resolution: "N word(s) N" where the second N
+    # replaced a plural template. Common patterns:
+    # "draw 2 additional 2." -> "draw 2 additional."
+    # "defeating 5 5." -> "defeating 5."
+    # Allow 0-2 intervening words between the duplicated numbers.
+    def _dedup_numbers(m: re.Match[str]) -> str:
+        return m.group(1) + m.group(3)
+    text = re.sub(r"(\b(\d+))(\s+(?:\w+\s+){0,2})\2\b(?=[^0-9])", _dedup_numbers, text)
+
+    # Fix concatenated "letter0digit" patterns from engine joining resolved values
+    # without space: "damage01" -> "damage 1", "a\n01" -> "a\n1"
+    text = re.sub(r"([a-zA-Z])0(\d)", r"\1 \2", text)
+    # Also at line start: "\n01" -> "\n1"
+    text = re.sub(r"(\n)0(\d)", r"\1\2", text)
+
+    # Fix missing space in engine localization templates (e.g. "damagefor" -> "damage for")
+    text = re.sub(r"damage(for)", r"damage \1", text)
+
+    # Strip stray "for the next -1 turns" patterns (negative turn counts are invalid)
+    text = re.sub(r"(?:for )?(?:the next )?-\d+ turns?\.?", "", text)
+
     # Collapse excess whitespace, multiple spaces, and blank lines
     text = re.sub(r"  +", " ", text)
     text = re.sub(r"\n\s*\n", "\n", text)
+    # Fix space before punctuation left by template removal
+    text = re.sub(r"\s+([.,;:])", r"\1", text)
     return text.strip()
 
 
@@ -405,6 +469,101 @@ def calculate_display_block(base_block: int, player: dict) -> int:
     return max(0, block)
 
 
+# Known power template variables from game_data/powers.json.
+# Maps lowercase power name -> dict of template vars.
+# Used when the engine partially resolves power descriptions but leaves
+# template vars like {DamageDecrease} or {DamageIncrease} unresolved.
+_KNOWN_POWER_VARS: dict[str, dict[str, Any]] = {
+    "flutter": {"damagedecrease": 50},
+    "shrink": {"damagedecrease": 30},
+    "vulnerable": {"damageincrease": 50},
+    "weak": {"damagedecrease": 25},
+}
+
+
+def _power_resolve_stats(power_name: str, amount: int) -> dict[str, Any]:
+    """Build the stats dict for resolving a power description template.
+
+    Includes the power's amount plus any known extra vars from game_data.
+    """
+    stats: dict[str, Any] = {"amount": amount}
+    known = _KNOWN_POWER_VARS.get(power_name.lower(), {})
+    stats.update(known)
+    return stats
+
+
+def _resolve_applier_name(text: str, *, owner: str, applier: str,
+                          use_false_branch: bool = False) -> str:
+    """Resolve {ApplierName.StringValue:cond:trueText|falseText} patterns.
+
+    These patterns reference the creature that applied a power. The true
+    branch typically says "While {applier} is alive, your..." and the
+    false branch says "{OwnerName}'s...".
+
+    Because the false branch contains nested ``{OwnerName}``, a simple
+    regex cannot match the balanced outer braces.  This function finds
+    the pattern manually with brace counting.
+
+    Args:
+        text: The description text to process.
+        owner: Name to substitute for {OwnerName} inside the result.
+        applier: Name to substitute for {} self-references in the true branch.
+        use_false_branch: If True, use the false branch (for enemy context).
+    """
+    marker = "{ApplierName."
+    idx = text.find(marker)
+    if idx < 0:
+        return text
+
+    # Find balanced closing brace
+    depth = 0
+    end = -1
+    for i in range(idx, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    if end < 0:
+        return text  # unbalanced -- leave as-is
+
+    block = text[idx + 1:end]  # everything inside the outer { }
+    # Find the pipe separating true|false branches
+    # Skip nested braces when looking for the pipe
+    pipe_depth = 0
+    pipe_idx = -1
+    cond_start = block.find(":cond:")
+    if cond_start < 0:
+        return text
+    search_start = cond_start + len(":cond:")
+    for i in range(search_start, len(block)):
+        if block[i] == "{":
+            pipe_depth += 1
+        elif block[i] == "}":
+            pipe_depth -= 1
+        elif block[i] == "|" and pipe_depth == 0:
+            pipe_idx = i
+            break
+    if pipe_idx < 0:
+        return text
+
+    true_branch = block[search_start:pipe_idx]
+    false_branch = block[pipe_idx + 1:]
+
+    if use_false_branch:
+        result = false_branch
+        # Substitute {OwnerName} in the false branch (may already be resolved)
+        result = result.replace("{OwnerName}", owner)
+    else:
+        result = true_branch
+        # Substitute {} self-references with the applier name
+        result = result.replace("{}", applier)
+
+    return text[:idx] + result + text[end + 1:]
+
+
 def extract_enemies(state: dict) -> list[dict]:
     """Normalise enemy data from a combat_play response."""
     result = []
@@ -413,15 +572,26 @@ def extract_enemies(state: dict) -> list[dict]:
         powers = []
         for pw in e.get("powers") or []:
             # CLI resolves most power descriptions, but some still contain
-            # unresolved templates (e.g. {energyPrefix:energyIcons(1)}).
+            # unresolved templates (e.g. {energyPrefix:energyIcons(1)},
+            # {DamageDecrease}, {OwnerName}).
             # Run through resolve_card_description as a fallback.
+            pw_name = _name_str(pw.get("name", ""))
+            pw_amount = pw.get("amount", 0)
             raw_desc = pw.get("description", "")
             # Substitute {OwnerName} with the enemy's name before template resolution
             raw_desc = re.sub(r"\{OwnerName\}", enemy_name, raw_desc)
-            resolved_desc = resolve_card_description(raw_desc, {"amount": pw.get("amount", 0)})
+            # Substitute {ApplierName.StringValue:cond:trueText|falseText} pattern.
+            # For enemy powers: use the false branch which has {OwnerName}'s
+            # (already substituted with enemy name above).
+            raw_desc = _resolve_applier_name(raw_desc, owner=enemy_name, applier="enemy", use_false_branch=True)
+            stats = _power_resolve_stats(pw_name, pw_amount)
+            resolved_desc = resolve_card_description(raw_desc, stats)
+            # Fix Vulnerable missing percentage from engine partial resolution
+            if pw_name == "Vulnerable" and "Receive % more" in resolved_desc:
+                resolved_desc = resolved_desc.replace("Receive % more", "Receive 50% more")
             powers.append({
-                "name": _name_str(pw.get("name", "")),
-                "amount": pw.get("amount", 0),
+                "name": pw_name,
+                "amount": pw_amount,
                 "description": resolved_desc,
             })
         # Parse intents -- collect ALL intent parts for multi-intent enemies
@@ -556,18 +726,35 @@ def extract_player(state: dict) -> dict:
     powers = []
     for pw in state.get("player_powers") or []:
         # CLI resolves most power descriptions, but some still contain
-        # unresolved templates (e.g. {energyPrefix:energyIcons(1)}).
+        # unresolved templates (e.g. {energyPrefix:energyIcons(1)},
+        # {DamageDecrease}, {ApplierName...}).
         # Run through resolve_card_description as a fallback.
         resolved_name = _name_str(pw.get("name", ""))
+        pw_amount = pw.get("amount", 0)
         raw_desc = pw.get("description", "")
-        resolved_desc = resolve_card_description(raw_desc, {"amount": pw.get("amount", 0)})
+        # Substitute {ApplierName.StringValue:cond:trueText|falseText} pattern.
+        # For player powers: use the true branch (applier-alive context).
+        # The false branch may contain nested {OwnerName} so we use a function
+        # to find the balanced closing brace.
+        raw_desc = _resolve_applier_name(raw_desc, owner="you", applier="the enemy")
+        # Substitute remaining {OwnerName} with "your"/"you" for player context
+        raw_desc = re.sub(r"\{OwnerName\}'s", "your", raw_desc)
+        raw_desc = re.sub(r"\{OwnerName\}", "you", raw_desc)
+        stats = _power_resolve_stats(resolved_name, pw_amount)
+        resolved_desc = resolve_card_description(raw_desc, stats)
         # Clarify Doom description context when on the player
         if resolved_name == "Doom" and "it dies" in resolved_desc:
             resolved_desc = resolved_desc.replace("it dies", "you die")
             resolved_desc = resolved_desc.replace("it has", "you have")
+        # Clarify Shrink description context when on the player
+        if resolved_name == "Shrink" and "This creature's Attacks" in resolved_desc:
+            resolved_desc = resolved_desc.replace("This creature's Attacks", "Your Attacks")
+        # Fix Vulnerable missing percentage from engine partial resolution
+        if resolved_name == "Vulnerable" and "Receive % more" in resolved_desc:
+            resolved_desc = resolved_desc.replace("Receive % more", "Receive 50% more")
         powers.append({
             "name": resolved_name,
-            "amount": pw.get("amount", 0),
+            "amount": pw_amount,
             "description": resolved_desc,
         })
     potions = []

@@ -45,6 +45,8 @@ DEBUFF_NAMES: frozenset[str] = frozenset({
     "Constrict", "Shrink",
     "Doom", "Ringing",
     "Tangled", "Tender",
+    # v5 Round 1 additions
+    "Neurosurge",
 })
 
 BUFF_NAMES: frozenset[str] = frozenset({
@@ -74,6 +76,11 @@ BUFF_NAMES: frozenset[str] = frozenset({
     "Void Form", "Well-Laid Plans",
     # Enemy powers (v4 Round 1)
     "Grapple", "Personal Hive",
+    # v5 Round 1 additions (player buffs)
+    "Child of the Stars", "Colossus", "Consuming Shadow", "Fasten",
+    "Nostalgia", "Plating", "Retain Hand", "The Gambit", "Thunder",
+    # v5 Round 1 additions (enemy buffs)
+    "Conqueror", "Debilitate", "Vital Spark",
 })
 
 

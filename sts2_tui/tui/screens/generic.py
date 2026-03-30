@@ -151,6 +151,24 @@ class GenericScreen(Screen):
                     icon = KEYWORD_ICONS.get(kw.title(), "")
                     if icon:
                         t.append(f" {icon}", style="bold red" if kw.title() == "Exhaust" else "bold cyan")
+            # Show enchantment badge (Regent mechanic, same as combat CardWidget)
+            enchantment = opt.get("enchantment")
+            if enchantment:
+                ench_name = _name_str(enchantment) if isinstance(enchantment, dict) else str(enchantment)
+                ench_amount = opt.get("enchantment_amount")
+                if ench_amount:
+                    t.append(f" \u2728{ench_name} +{ench_amount}", style="bold bright_green")
+                else:
+                    t.append(f" \u2728{ench_name}", style="bold bright_green")
+            # Show affliction badge
+            affliction = opt.get("affliction")
+            if affliction:
+                aff_name = _name_str(affliction) if isinstance(affliction, dict) else str(affliction)
+                aff_amount = opt.get("affliction_amount")
+                if aff_amount:
+                    t.append(f" \u2620{aff_name} {aff_amount}", style="bold bright_red")
+                else:
+                    t.append(f" \u2620{aff_name}", style="bold bright_red")
             if cost is not None:
                 t.append(f" ({cost})", style="yellow")
             star_cost = opt.get("star_cost")
