@@ -42,6 +42,7 @@ class GenericScreen(Screen):
     BINDINGS = [
         Binding("up,k", "move_selection(-1)", "Up", show=False),
         Binding("down,j", "move_selection(1)", "Down", show=False),
+        Binding("space", "toggle_selection", "Toggle", show=False),
         Binding("enter", "proceed", "Proceed"),
         Binding("escape", "leave", "Leave"),
     ]
@@ -60,6 +61,12 @@ class GenericScreen(Screen):
             or state.get("cards", [])
             or state.get("bundles", [])
             or []
+        )
+        # Multi-select tracking for card_select with max_select > 1
+        self._selected_indices: set[int] = set()
+        self._is_multi_select = (
+            state.get("decision") == "card_select"
+            and (state.get("max_select") or 1) > 1
         )
 
     def compose(self) -> ComposeResult:
@@ -102,6 +109,9 @@ class GenericScreen(Screen):
             if self.options:
                 bindings.append("[up/down]", style="bold yellow")
                 bindings.append(f" {L('navigate')}  ", style="dim")
+            if self._is_multi_select:
+                bindings.append("[Space]", style="bold yellow")
+                bindings.append(f" {L('select')}  ", style="dim")
             bindings.append("[Enter]", style="bold yellow")
             bindings.append(f" {L('confirm')}  ", style="dim")
             bindings.append("[Esc]", style="bold yellow")
@@ -151,7 +161,13 @@ class GenericScreen(Screen):
             # Type-based color for card_select
             type_color = CARD_TYPE_COLORS.get(card_type, "white")
 
-            marker = " >>>" if i == self.selected else "    "
+            is_checked = i in self._selected_indices
+            if self._is_multi_select:
+                check = "\u2611" if is_checked else "\u2610"  # ☑ or ☐
+                cursor = ">" if i == self.selected else " "
+                marker = f" {cursor}{check} "
+            else:
+                marker = " >>>" if i == self.selected else "    "
             t.append(f"{marker} [{i + 1}] ", style="bold yellow")
             # Show "+" suffix for upgraded cards
             if opt.get("upgraded"):
@@ -236,6 +252,28 @@ class GenericScreen(Screen):
         except Exception:
             pass
 
+    def action_toggle_selection(self) -> None:
+        """Toggle the current item in/out of the multi-select set."""
+        if not self._is_multi_select or self.selected < 0 or not self.options:
+            return
+        max_sel = self.state.get("max_select") or len(self.options)
+        if self.selected in self._selected_indices:
+            self._selected_indices.discard(self.selected)
+        elif len(self._selected_indices) < max_sel:
+            self._selected_indices.add(self.selected)
+        else:
+            self.notify(f"Max {max_sel} selections", severity="warning")
+            return
+        # Re-render
+        try:
+            viewport = self.query_one("#map-viewport")
+            for child in viewport.children:
+                if isinstance(child, Static):
+                    child.update(self._options_text())
+                    break
+        except Exception:
+            pass
+
     async def action_proceed(self) -> None:
         if self._busy:
             return
@@ -243,7 +281,14 @@ class GenericScreen(Screen):
         try:
             decision = self.state.get("decision", "")
 
-            if self.selected >= 0 and self.options:
+            if decision == "card_select" and self._is_multi_select and self._selected_indices:
+                # Multi-select: send all checked indices as comma-separated
+                indices_str = ",".join(
+                    str(self.options[i].get("index", i))
+                    for i in sorted(self._selected_indices)
+                )
+                state = await self.controller.select_cards(indices_str)
+            elif self.selected >= 0 and self.options:
                 opt = self.options[self.selected]
                 # Try various action formats depending on decision type
                 if decision == "bundle_select":

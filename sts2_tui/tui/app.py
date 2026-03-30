@@ -231,14 +231,14 @@ class SlsApp(App):
         t.append(f"\n  {floor_text}\n", style="bold white")
         if boss_name and not victory and room_type == "Boss":
             t.append(f"  vs. {boss_name}\n", style="bold bright_red")
-        t.append(f"\n  HP: {hp}/{max_hp}", style="white")
-        t.append(f"  |  Gold: {gold}", style="bold yellow")
+        t.append(f"\n  {L('hp_label')}: {hp}/{max_hp}", style="white")
+        t.append(f"  |  {L('gold_label')}: {gold}", style="bold yellow")
         t.append(f"  |  {L('deck')}: {deck_size}\n", style="white")
 
         # Potions held
         potions = player_data.get("potions", [])
         if potions:
-            t.append(f"\n  Potions ({len(potions)}): ", style="dim")
+            t.append(f"\n  {L('potions')} ({len(potions)}): ", style="dim")
             for i, p in enumerate(potions):
                 if i > 0:
                     t.append(", ", style="dim")

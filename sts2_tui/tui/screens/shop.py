@@ -910,7 +910,7 @@ class ShopScreen(Screen):
             upgrade_str = build_upgrade_preview(card_dict, item.after_upgrade)
             if upgrade_str:
                 desc_indent = "          "
-                t.append(f"{desc_indent}Upgrade: {upgrade_str}\n", style="dim cyan")
+                t.append(f"{desc_indent}{L('upgrade')}: {upgrade_str}\n", style="dim cyan")
 
     def _render_item_line(self, t: Text, item: _ShopItem, flat_idx: int) -> None:
         """Render a relic, potion, or service line."""

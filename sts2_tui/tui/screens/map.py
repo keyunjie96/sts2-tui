@@ -497,6 +497,7 @@ class MapScreen(Screen):
         self.controller = controller
         self._busy = False
         self._map_data: dict | None = None
+        self._esc_warned = False
 
     def compose(self) -> ComposeResult:
         with Vertical(id="map-screen"):
@@ -637,7 +638,9 @@ class MapScreen(Screen):
         # Don't quit the whole app -- just dismiss this screen.
         # The map is typically the "idle" screen between rooms, so Esc
         # should be a no-op rather than killing the session.
-        self.notify("Press Q to quit the game.", severity="warning")
+        if not self._esc_warned:
+            self.notify("Press Q to quit the game.", severity="warning")
+            self._esc_warned = True
 
     async def action_select_path(self, index: int) -> None:
         if self._busy:

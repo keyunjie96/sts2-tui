@@ -622,6 +622,7 @@ def extract_enemies(state: dict) -> list[dict]:
                 "name": pw_name,
                 "amount": pw_amount,
                 "description": resolved_desc,
+                "type": pw.get("type"),
             })
         # Parse intents -- collect ALL intent parts for multi-intent enemies
         intents_raw = e.get("intents") or []
@@ -785,6 +786,7 @@ def extract_player(state: dict) -> dict:
             "name": resolved_name,
             "amount": pw_amount,
             "description": resolved_desc,
+            "type": pw.get("type"),
         })
     potions = []
     for pot in p.get("potions") or []:

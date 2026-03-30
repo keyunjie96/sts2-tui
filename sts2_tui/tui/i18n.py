@@ -156,6 +156,11 @@ LABELS: dict[str, dict[str, str]] = {
         "choose_character": "Choose your character:",
         "start": "Start",
         "quit": "Quit",
+        "char_ironclad_desc": "A hardened warrior. Starts with Burning Blood.",
+        "char_silent_desc": "A deadly huntress. Starts with Ring of the Snake.",
+        "char_defect_desc": "A sentient construct. Starts with Cracked Core.",
+        "char_necrobinder_desc": "A dark summoner.",
+        "char_regent_desc": "A royal commander.",
 
         # Generic
         "options": "Options:",
@@ -166,6 +171,11 @@ LABELS: dict[str, dict[str, str]] = {
         # Deck viewer
         "your_deck": "YOUR DECK ({0} cards)",
         "deck_empty": "Your deck is empty.",
+        "deck_attacks": "ATTACKS",
+        "deck_skills": "SKILLS",
+        "deck_powers": "POWERS",
+        "deck_status": "STATUS",
+        "deck_curses": "CURSES",
 
         # Combat overlays
         "victory": "VICTORY!",
@@ -359,6 +369,11 @@ LABELS: dict[str, dict[str, str]] = {
         "choose_character": "选择你的角色：",
         "start": "开始",
         "quit": "退出",
+        "char_ironclad_desc": "久经沙场的战士。初始遗物：燃血。",
+        "char_silent_desc": "致命的女猎手。初始遗物：蛇环。",
+        "char_defect_desc": "有意识的机器人。初始遗物：破碎核心。",
+        "char_necrobinder_desc": "黑暗的召唤师。",
+        "char_regent_desc": "皇家指挥官。",
 
         # Generic
         "options": "选项：",
@@ -369,6 +384,11 @@ LABELS: dict[str, dict[str, str]] = {
         # Deck viewer
         "your_deck": "你的牌组（{0} 张卡牌）",
         "deck_empty": "你的牌组是空的。",
+        "deck_attacks": "攻击",
+        "deck_skills": "技能",
+        "deck_powers": "能力",
+        "deck_status": "状态",
+        "deck_curses": "诅咒",
 
         # Combat overlays
         "victory": "胜利！",

@@ -24,35 +24,35 @@ CHARACTERS = [
     {
         "id": "Ironclad",
         "name": "The Ironclad",
-        "description": "A hardened warrior. Starts with Burning Blood.",
+        "description_key": "char_ironclad_desc",
         "color": "red",
         "icon": "\u2694",   # ⚔ crossed swords
     },
     {
         "id": "Silent",
         "name": "The Silent",
-        "description": "A deadly huntress. Starts with Ring of the Snake.",
+        "description_key": "char_silent_desc",
         "color": "green",
         "icon": "\u2660",   # ♠ spade (shivs & poison)
     },
     {
         "id": "Defect",
         "name": "The Defect",
-        "description": "A sentient construct. Starts with Cracked Core.",
+        "description_key": "char_defect_desc",
         "color": "blue",
         "icon": "\u26a1",
     },
     {
         "id": "Necrobinder",
         "name": "The Necrobinder",
-        "description": "A dark summoner.",
+        "description_key": "char_necrobinder_desc",
         "color": "magenta",
         "icon": "\u2620",
     },
     {
         "id": "Regent",
         "name": "The Regent",
-        "description": "A royal commander.",
+        "description_key": "char_regent_desc",
         "color": "yellow",
         "icon": "\u265a",
     },
@@ -88,7 +88,8 @@ class CharacterWidget(Static):
         yield Static(title_text, classes="rest-option-title")
 
         desc_text = Text(justify="center")
-        desc_text.append(c.get("description", ""), style="dim white")
+        desc_key = c.get("description_key", "")
+        desc_text.append(L(desc_key) if desc_key else "", style="dim white")
         yield Static(desc_text, classes="rest-option-desc")
 
 

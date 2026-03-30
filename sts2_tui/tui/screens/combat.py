@@ -506,6 +506,9 @@ class OstyDisplay(Static):
         color = hp_color(hp, max_hp)
         bar_w = 8
         filled = int(ratio * bar_w)
+        # Ensure at least 1 filled char while Osty is alive
+        if hp > 0:
+            filled = max(1, filled)
         empty = bar_w - filled
 
         t.append("  \u2764 ", style=f"bold {color}")
@@ -937,7 +940,7 @@ class PileViewerOverlay(Screen):
                 with VerticalScroll(id="pile-list"):
                     yield Static(self._body())
                 yield Static(
-                    Text("[Esc] Close  [Up/Down] Scroll", style="dim", justify="center"),
+                    Text(f"[Esc] {L('close')}  [Up/Down] {L('scroll')}", style="dim", justify="center"),
                 )
 
     def _title_text(self) -> Text:

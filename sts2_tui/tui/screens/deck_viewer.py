@@ -27,6 +27,14 @@ log = logging.getLogger(__name__)
 # Type -> (display label, color)
 # ---------------------------------------------------------------------------
 
+_TYPE_I18N_KEYS: dict[str, str] = {
+    "Attack": "deck_attacks",
+    "Skill": "deck_skills",
+    "Power": "deck_powers",
+    "Status": "deck_status",
+    "Curse": "deck_curses",
+}
+
 _TYPE_COLORS: dict[str, tuple[str, str]] = {
     "Attack": ("ATTACKS", CARD_TYPE_COLORS["Attack"]),
     "Skill": ("SKILLS", CARD_TYPE_COLORS["Skill"]),
@@ -34,6 +42,14 @@ _TYPE_COLORS: dict[str, tuple[str, str]] = {
     "Status": ("STATUS", CARD_TYPE_COLORS["Status"]),
     "Curse": ("CURSES", CARD_TYPE_COLORS["Curse"]),
 }
+
+
+def _type_label(card_type: str) -> tuple[str, str]:
+    """Return (localized label, color) for a card type."""
+    i18n_key = _TYPE_I18N_KEYS.get(card_type)
+    if i18n_key:
+        return (L(i18n_key), CARD_TYPE_COLORS.get(card_type, "white"))
+    return (card_type.upper(), "white")
 
 _TYPE_ORDER = ["Attack", "Skill", "Power", "Status", "Curse"]
 
@@ -135,15 +151,8 @@ class DeckViewerOverlay(Screen):
             for type_key in _TYPE_ORDER:
                 count = type_counts.get(type_key, 0)
                 if count > 0:
-                    label, color = _TYPE_COLORS.get(type_key, (type_key.upper(), "white"))
-                    # Singularize: strip trailing 'S' only if the label ends
-                    # with a consonant+S pattern (ATTACKS->ATTACK, SKILLS->SKILL,
-                    # etc.) but NOT for STATUS which is already singular.
-                    if count == 1 and label.endswith("S") and label != "STATUS":
-                        singular = label[:-1]
-                    else:
-                        singular = label
-                    parts.append((f"{count} {singular if count == 1 else label}", color))
+                    label, color = _type_label(type_key)
+                    parts.append((f"{count} {label}", color))
             # Any unknown types
             for type_key, count in type_counts.items():
                 if type_key not in _TYPE_ORDER and count > 0:
@@ -168,7 +177,7 @@ class DeckViewerOverlay(Screen):
             cards = groups.get(type_key)
             if not cards:
                 continue
-            label, color = _TYPE_COLORS.get(type_key, (type_key.upper(), "white"))
+            label, color = _type_label(type_key)
             t.append(f"\n  {label} ({len(cards)})\n", style=f"bold {color} underline")
             for card in cards:
                 t.append_text(_format_deck_card(card))
