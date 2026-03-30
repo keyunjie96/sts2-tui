@@ -197,6 +197,7 @@ class CardRewardScreen(Screen):
         self._is_composed = False
         self._busy = False
         self._refreshing = False
+        self._needs_refresh = False
 
     def compose(self) -> ComposeResult:
         with Vertical(id="card-reward-screen"):
@@ -217,9 +218,15 @@ class CardRewardScreen(Screen):
         self._is_composed = True
 
     async def _refresh_display(self) -> None:
-        if not self._is_composed or self._refreshing:
+        if not self._is_composed:
+            return
+        if self._refreshing:
+            # Another refresh is in progress -- flag that we need a re-render
+            # after it finishes so the update is not silently dropped.
+            self._needs_refresh = True
             return
         self._refreshing = True
+        self._needs_refresh = False
         try:
             for old in self.query("#card-reward-screen"):
                 await old.remove()
@@ -244,6 +251,10 @@ class CardRewardScreen(Screen):
             )
         finally:
             self._refreshing = False
+            # If a refresh was requested while we were busy, re-trigger now.
+            if self._needs_refresh:
+                self._needs_refresh = False
+                self.call_later(self._refresh_display)
 
     def _title_text(self) -> Text:
         title = Text(justify="center")

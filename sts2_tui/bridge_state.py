@@ -177,8 +177,15 @@ def parse_power(data: dict[str, Any]) -> Power:
     amount = data.get("amount", 0)
     if amount is None:
         amount = 0
-    # Negative amounts typically indicate debuffs.
-    ptype = PowerType.DEBUFF if (isinstance(amount, (int, float)) and amount < 0) else PowerType.BUFF
+    # Prefer the engine's explicit "type" field ("buff" / "debuff") when
+    # available.  Fall back to the sign heuristic only when the field is
+    # absent or unrecognised.
+    engine_type = data.get("type")
+    if isinstance(engine_type, str) and engine_type.lower() in ("buff", "debuff"):
+        ptype = PowerType.DEBUFF if engine_type.lower() == "debuff" else PowerType.BUFF
+    else:
+        # Fallback: negative amounts typically indicate debuffs.
+        ptype = PowerType.DEBUFF if (isinstance(amount, (int, float)) and amount < 0) else PowerType.BUFF
     return Power(
         id=_lower_or(data.get("id") or data.get("name"), "unknown"),
         name=_name_str(data.get("name")),

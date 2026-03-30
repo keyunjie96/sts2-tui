@@ -553,7 +553,15 @@ class MapScreen(Screen):
     def _refresh_map(self) -> None:
         """Re-render the map content."""
         content = self.query_one("#map-content", Static)
-        choices = self.state.get("choices", [])
+        # Deduplicate choices by (col, row) -- keep the first occurrence
+        raw_choices = self.state.get("choices", [])
+        seen_coords: set[tuple[int, int]] = set()
+        choices: list[dict] = []
+        for ch in raw_choices:
+            coord = (ch["col"], ch["row"])
+            if coord not in seen_coords:
+                seen_coords.add(coord)
+                choices.append(ch)
         choice_set = {(ch["col"], ch["row"]) for ch in choices}
         choice_indices = {(ch["col"], ch["row"]): i for i, ch in enumerate(choices)}
         ctx = self.state.get("context", {})

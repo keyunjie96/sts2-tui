@@ -309,8 +309,13 @@ class GenericScreen(Screen):
         self._busy = True
         try:
             decision = self.state.get("decision", "")
+            min_sel = self.state.get("min_select")
 
             if decision == "card_select" and self._is_multi_select and self._selected_indices:
+                # Multi-select: validate minimum selection count
+                if min_sel is not None and len(self._selected_indices) < min_sel:
+                    self.notify(f"You must select at least {min_sel} card(s)", severity="warning")
+                    return
                 # Multi-select: send all checked indices as comma-separated
                 indices_str = ",".join(
                     str(self.options[i].get("index", i))
@@ -333,6 +338,10 @@ class GenericScreen(Screen):
                         opt.get("index", self.selected),
                     )
             else:
+                # No selection -- block if card_select with mandatory minimum
+                if decision == "card_select" and min_sel is not None and min_sel >= 1:
+                    self.notify("You must select a card", severity="warning")
+                    return
                 # No selection -- just proceed
                 if decision == "shop":
                     state = await self.controller.leave_room()
@@ -356,9 +365,15 @@ class GenericScreen(Screen):
     async def action_leave(self) -> None:
         if self._busy:
             return
+        # Block Esc/skip when card_select has a mandatory minimum selection
+        decision = self.state.get("decision", "")
+        if decision == "card_select":
+            min_sel = self.state.get("min_select")
+            if min_sel is not None and min_sel >= 1:
+                self.notify("You must select a card", severity="warning")
+                return
         self._busy = True
         try:
-            decision = self.state.get("decision", "")
             if decision == "card_select":
                 state = await self.controller.skip_select()
             else:

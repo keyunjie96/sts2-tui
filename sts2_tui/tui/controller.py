@@ -1008,6 +1008,9 @@ def _enrich_card_stats(card: dict) -> dict:
     Handles basic cards like "Strike" / "Defend" which are stored in
     game_data as "Strike Ironclad", "Strike Silent", etc. by trying
     all character suffixes if the exact name is not found.
+
+    For upgraded cards, applies ``upgrade_deltas`` from game_data to
+    the base vars so the enriched stats reflect the upgraded values.
     """
     try:
         from sts2_tui.tui.screens.shop import _load_card_data, _expand_vars, _normalize_name
@@ -1023,7 +1026,16 @@ def _enrich_card_stats(card: dict) -> dict:
                 if data:
                     break
         if data:
-            raw_vars = data.get("vars") or {}
+            raw_vars = dict(data.get("vars") or {})
+            # Apply upgrade_deltas when the card is upgraded so enriched
+            # stats reflect upgraded values (e.g. +3 damage).
+            if card.get("upgraded") and raw_vars:
+                upgrade_deltas = data.get("upgrade_deltas") or {}
+                for k, delta in upgrade_deltas.items():
+                    if k in raw_vars and isinstance(raw_vars[k], (int, float)) and isinstance(delta, (int, float)):
+                        raw_vars[k] = raw_vars[k] + delta
+                    elif k not in raw_vars:
+                        raw_vars[k] = delta
             if raw_vars:
                 return _expand_vars(raw_vars)
     except Exception:

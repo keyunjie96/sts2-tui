@@ -96,6 +96,7 @@ class RestOptionWidget(Static):
                 "~" + L("heal_desc").format(heal_amount, self.player_hp, new_hp),
                 style="dim white",
             )
+            desc_text.append(" (may vary with relics)", style="dim")
         elif option_id == "SMITH":
             desc_text.append(L("smith_desc"), style="dim white")
         else:
