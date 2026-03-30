@@ -29,8 +29,9 @@ def _name_str(name_obj: Any) -> str:
     this returns the value for the current language setting, falling back to
     English then Chinese.
 
-    Also handles raw localization keys like ``"KAISER_CRAB.name"`` by stripping
-    the ``.name`` suffix and converting ``UPPER_SNAKE`` to title case.
+    The CLI now resolves localization keys (power names, monster names, etc.)
+    with fallback to HumanizeId, so the TUI no longer needs to strip
+    ``.name``/``.title`` suffixes or convert UPPER_SNAKE_CASE.
     """
     if name_obj is None:
         return "?"
@@ -38,22 +39,7 @@ def _name_str(name_obj: Any) -> str:
         from sts2_tui.tui.i18n import get_language
         lang = get_language()
         return name_obj.get(lang) or name_obj.get("en") or name_obj.get("zh") or str(name_obj)
-    s = str(name_obj)
-    # Detect unresolved localization keys like "KAISER_CRAB.name",
-    # "SYNCHRONIZE_POWER.title", "SYNCHRONIZE_POWER.description", etc.
-    _LOC_SUFFIXES = (".name", ".title", ".description", ".titleObject",
-                     ".pronounSubject", ".possessiveAdjective")
-    for suffix in _LOC_SUFFIXES:
-        if s.endswith(suffix) and s[0].isupper():
-            key = s[: -len(suffix)]
-            # Strip common type suffixes like "_POWER" before formatting
-            for type_suffix in ("_POWER", "_RELIC", "_POTION"):
-                if key.endswith(type_suffix):
-                    key = key[: -len(type_suffix)]
-                    break
-            # Convert UPPER_SNAKE_CASE to Title Case (e.g. "KAISER_CRAB" -> "Kaiser Crab")
-            return key.replace("_", " ").title()
-    return s
+    return str(name_obj)
 
 
 _STAT_KEY_LABELS: dict[str, str] = {
@@ -398,19 +384,13 @@ def extract_enemies(state: dict) -> list[dict]:
     for e in state.get("enemies", []):
         powers = []
         for pw in e.get("powers") or []:
-            raw_name = pw.get("name", "")
-            raw_desc = pw.get("description", "")
-            resolved_name = _name_str(raw_name)
-            # Resolve template variables in power descriptions (e.g. {energyPrefix:energyIcons(1)})
-            resolved_desc = resolve_card_description(raw_desc, None, in_combat=True) if raw_desc else ""
-            # Substitute literal "X" in description with the power's amount
-            pw_amount = pw.get("amount", 0)
-            if "X" in resolved_desc and pw_amount is not None:
-                resolved_desc = re.sub(r'\bX\b', str(pw_amount), resolved_desc)
+            # CLI now resolves power names (with HumanizeId fallback) and
+            # power descriptions (ResolvePowerTemplates: {Amount}, {energyIcons}, X, BBCode).
+            # TUI just passes them through.
             powers.append({
-                "name": resolved_name,
-                "amount": pw_amount,
-                "description": resolved_desc,
+                "name": _name_str(pw.get("name", "")),
+                "amount": pw.get("amount", 0),
+                "description": pw.get("description", ""),
             })
         # Parse intents -- collect ALL intent parts for multi-intent enemies
         intents_raw = e.get("intents") or []
@@ -538,23 +518,18 @@ def extract_player(state: dict) -> dict:
     p = state.get("player", {})
     powers = []
     for pw in state.get("player_powers") or []:
-        raw_name = pw.get("name", "")
-        raw_desc = pw.get("description", "")
-        resolved_name = _name_str(raw_name)
-        # Resolve template variables in power descriptions (e.g. {energyPrefix:energyIcons(1)})
-        # Player powers are in combat context when player_powers is present
-        resolved_desc = resolve_card_description(raw_desc, None, in_combat=True) if raw_desc else ""
-        # Substitute literal "X" in description with the power's amount
-        amount = pw.get("amount", 0)
-        if "X" in resolved_desc and amount is not None:
-            resolved_desc = re.sub(r'\bX\b', str(amount), resolved_desc)
+        # CLI now resolves power names (with HumanizeId fallback) and
+        # power descriptions (ResolvePowerTemplates: {Amount}, {energyIcons}, X, BBCode).
+        # TUI just passes them through.
+        resolved_name = _name_str(pw.get("name", ""))
+        resolved_desc = pw.get("description", "")
         # Clarify Doom description context when on the player
         if resolved_name == "Doom" and "it dies" in resolved_desc:
             resolved_desc = resolved_desc.replace("it dies", "you die")
             resolved_desc = resolved_desc.replace("it has", "you have")
         powers.append({
             "name": resolved_name,
-            "amount": amount,
+            "amount": pw.get("amount", 0),
             "description": resolved_desc,
         })
     potions = []
