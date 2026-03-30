@@ -84,6 +84,9 @@ BUFF_NAMES: frozenset[str] = frozenset({
     # v6 Round 1 additions
     "Automation", "Black Hole", "Block Next Turn", "Coolant", "Demon Form",
     "Haunt", "Rolling Boulder", "Spectrum Shift", "Sword Sage",
+    # v7 additions
+    "Afterimage", "Blur", "Demesne", "Double Damage", "Pillar of Creation",
+    "Shadow Step", "Sleight of Flesh", "Synchronize",
 })
 
 
