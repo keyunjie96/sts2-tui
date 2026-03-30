@@ -42,6 +42,28 @@ def _name_str(name_obj: Any) -> str:
     return str(name_obj)
 
 
+def _resolve_inline_loc_keys(text: str) -> str:
+    """Resolve literal localization keys embedded in text (e.g. ``CLUMSY.title``).
+
+    The engine sometimes emits event descriptions with raw localization keys
+    like ``Add CLUMSY.title to your Deck`` instead of ``Add Clumsy to your Deck``.
+    This function detects ``UPPER_SNAKE_CASE.title`` / ``.name`` / ``.description``
+    patterns and converts them to readable title-case text, stripping the suffix
+    and any ``_POWER``/``_RELIC``/``_POTION`` type markers.
+    """
+    def _replace_key(m: re.Match[str]) -> str:
+        raw = m.group(1)  # e.g. "CLUMSY", "BYRDONIS_EGG", "SHARP"
+        # Strip known type suffixes
+        for suffix in ("_POWER", "_RELIC", "_POTION", "_CARD"):
+            if raw.endswith(suffix):
+                raw = raw[: -len(suffix)]
+                break
+        # Convert UPPER_SNAKE_CASE to Title Case
+        return " ".join(w.capitalize() for w in raw.split("_"))
+
+    return re.sub(r"\b([A-Z][A-Z0-9_]+)\.(?:title|name|description|titleObject)\b", _replace_key, text)
+
+
 _STAT_KEY_LABELS: dict[str, str] = {
     "damage": "Damage",
     "block": "Block",
@@ -129,7 +151,12 @@ def resolve_card_description(description: str, stats: dict[str, Any] | None,
 
     def _energy_prefix_replace(m: re.Match[str]) -> str:
         n = int(m.group(1))
-        return _energy_label if n <= 1 else f"{n} {_energy_label}"
+        label = _energy_label if n <= 1 else f"{n} {_energy_label}"
+        # Insert space when the template immediately follows a digit (e.g. "0{...}" -> "0 Energy")
+        start = m.start()
+        if start > 0 and text[start - 1].isdigit():
+            return " " + label
+        return label
     text = re.sub(r"\{energyPrefix:energyIcons\((\d+)\)\}", _energy_prefix_replace, text)
     # Replace {IfUpgraded:show:A|B} with B (default non-upgraded value)
     # A can be empty (e.g., {IfUpgraded:show:| at random} → " at random")
@@ -384,13 +411,15 @@ def extract_enemies(state: dict) -> list[dict]:
     for e in state.get("enemies", []):
         powers = []
         for pw in e.get("powers") or []:
-            # CLI now resolves power names (with HumanizeId fallback) and
-            # power descriptions (ResolvePowerTemplates: {Amount}, {energyIcons}, X, BBCode).
-            # TUI just passes them through.
+            # CLI resolves most power descriptions, but some still contain
+            # unresolved templates (e.g. {energyPrefix:energyIcons(1)}).
+            # Run through resolve_card_description as a fallback.
+            raw_desc = pw.get("description", "")
+            resolved_desc = resolve_card_description(raw_desc, {"amount": pw.get("amount", 0)})
             powers.append({
                 "name": _name_str(pw.get("name", "")),
                 "amount": pw.get("amount", 0),
-                "description": pw.get("description", ""),
+                "description": resolved_desc,
             })
         # Parse intents -- collect ALL intent parts for multi-intent enemies
         intents_raw = e.get("intents") or []
@@ -518,11 +547,12 @@ def extract_player(state: dict) -> dict:
     p = state.get("player", {})
     powers = []
     for pw in state.get("player_powers") or []:
-        # CLI now resolves power names (with HumanizeId fallback) and
-        # power descriptions (ResolvePowerTemplates: {Amount}, {energyIcons}, X, BBCode).
-        # TUI just passes them through.
+        # CLI resolves most power descriptions, but some still contain
+        # unresolved templates (e.g. {energyPrefix:energyIcons(1)}).
+        # Run through resolve_card_description as a fallback.
         resolved_name = _name_str(pw.get("name", ""))
-        resolved_desc = pw.get("description", "")
+        raw_desc = pw.get("description", "")
+        resolved_desc = resolve_card_description(raw_desc, {"amount": pw.get("amount", 0)})
         # Clarify Doom description context when on the player
         if resolved_name == "Doom" and "it dies" in resolved_desc:
             resolved_desc = resolved_desc.replace("it dies", "you die")
@@ -536,7 +566,13 @@ def extract_player(state: dict) -> dict:
     for pot in p.get("potions") or []:
         raw_desc = pot.get("description", "")
         pot_vars = pot.get("vars") or {}
-        resolved_desc = resolve_card_description(raw_desc, pot_vars)
+        if pot_vars:
+            resolved_desc = resolve_card_description(raw_desc, pot_vars)
+        else:
+            # When engine sends vars=None, use shop enrichment path which
+            # looks up game_data and known extra vars for template resolution.
+            from sts2_tui.tui.screens.shop import _enrich_potion_description
+            resolved_desc = _enrich_potion_description(pot)
         potions.append({
             "index": pot.get("index", 0),
             "name": _name_str(pot.get("name")),

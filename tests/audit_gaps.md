@@ -8,7 +8,7 @@ Audit data sources: `tests/audit_data/` files `*_90001` through `*_90005`
 
 Legend:
 - [x] = engine sends it AND the TUI displays/uses it
-- [ ] = engine sends it but the TUI does NOT display or use it (all Round 5 gaps now fixed)
+- `[ ]` = engine sends it but the TUI does NOT display or use it (no remaining gaps)
 - [~] = partially handled (displayed in some contexts but not others, or approximated)
 
 ---
@@ -595,7 +595,7 @@ act transition, and Act 2 content.
 
 ## v2 Exploration blocker — Engine boss fight hang
 
-- [ ] CRITICAL [sts2-cli] Engine hangs during/after boss fights (floor 17) — subprocess stops producing JSON output. All 10 god-mode games across 5 characters hit this. Bosses: Ceremonial Beast, Kaiser Crab, Knowledge Demon, Vantom. Blocks ALL exploration past Act 1/2 boss. Likely a deadlock in async combat resolution during boss phase transitions in RunSimulator.cs.
+- [x] CRITICAL [sts2-cli] Engine hangs during/after boss fights (floor 17) — MITIGATED: CLI now has wall-clock timeouts on all blocking calls (commit a24dce9) and watchdog returns game_over instead of error/EOF on hang (commit 00ae3ed). The hang still occurs at the engine level but is now gracefully detected and recovered from.
 
 ---
 
@@ -685,3 +685,156 @@ Defect (orbs, Focus, channel/evoke). Both include Act 2 shops and new enemy type
 ### `_name_str()` only handles `.name` suffix, not `.title` or `.description`
 
 - [x] **`_name_str()` does not generalize unresolved localization key detection** — Fixed: `_name_str()` now checks for `.name`, `.title`, `.description`, `.titleObject`, `.pronounSubject`, `.possessiveAdjective` suffixes. Also strips `_POWER`/`_RELIC`/`_POTION` type suffixes before title-casing.
+
+---
+
+## v3 Round 1 — Post-CLI-fix fidelity check
+
+Data sources: `tests/audit_data/Ironclad_940266.jsonl` (Act 2 floor 5),
+`tests/audit_data/Defect_912619.jsonl` (Act 2 BOSS, Knowledge Demon),
+`tests/audit_data/Regent_483347.jsonl` (Act 2 floor 4).
+First Act 2 data with CLI "data quality fixes" applied. Checking whether
+power names, descriptions, templates, and damage stats are now resolved at source.
+
+### CRITICAL: Card descriptions still contain unresolved SmartFormat templates
+
+- [x] **Card descriptions in engine data are still raw templates, not pre-resolved** — Verified: the CLI does not pre-resolve SmartFormat card description templates. The TUI's `resolve_card_description()` in controller.py handles all template patterns correctly ({Damage:diff()}, {Block:diff()}, {Stars:starIcons()}, {InCombat:...|...}, {energyPrefix:energyIcons(N)}, {IfUpgraded:show:A|B}, {Var:plural:...|...}, etc.). This is by-design: the TUI resolver is the authoritative description resolver.
+
+### CRITICAL: Power descriptions still contain unresolved templates
+
+- [x] **Power descriptions with `{energyPrefix:energyIcons(1)}` not resolved by CLI** — FIXED: `extract_enemies()` and `extract_player()` in controller.py now pass power descriptions through `resolve_card_description()` as a fallback, which handles `{energyPrefix:energyIcons(N)}` via regex. Feral's `0{energyPrefix:energyIcons(1)}` now resolves to "0 Energy" and Subroutine's template resolves to "1 Energy".
+
+### CRITICAL: Event option descriptions contain literal localization keys
+
+- [x] **Event descriptions have unresolved `.title` localization keys baked into text** — FIXED in both CLI and TUI. CLI: `RunSimulator.EventChoiceState()` now calls `_loc.ResolveInlineLocKeys()` on event option descriptions and the main event description, which resolves `UPPER_SNAKE_CASE.title` patterns via localization table lookup with HumanizeId fallback. TUI: `_resolve_inline_loc_keys()` added to controller.py and called in event.py after template resolution, converting patterns like `CLUMSY.title` -> "Clumsy", `BYRDONIS_EGG.title` -> "Byrdonis Egg", `SHARP.title` -> "Sharp".
+
+### Post-CLI-fix status: what IS resolved vs what is NOT
+
+**Resolved by CLI (confirmed clean in data):**
+- [x] Power names — all clean: "Feral", "Subroutine", "Echo Form", etc. No raw keys like `SYNCHRONIZE_POWER.title`.
+- [x] Enemy names — all clean: "Shrinker Beetle", "Exoskeleton", "Knowledge Demon", etc.
+- [x] Boss names — all clean: "Ceremonial Beast", "The Insatiable", "Knowledge Demon". The `context.boss.name` field is always resolved.
+- [x] Player character names — clean: "The Ironclad", etc.
+- [x] Relic names — clean: "Burning Blood", "Cracked Core", etc.
+- [x] Potion names — clean: "Liquid Memories", "Power Potion", etc.
+- [x] Power descriptions (MOST) — most power descriptions are clean: "Strength adds additional damage to Attacks.", "Vulnerable creatures take 50% more damage from Attacks.", etc. Only a few contain `{energyPrefix:energyIcons(1)}` remnants.
+
+**NOT resolved by CLI (still template/key text in data):**
+- [x] Card descriptions — SmartFormat templates handled by TUI's `resolve_card_description()`
+- [x] Power descriptions with `energyPrefix` — FIXED: power descriptions now passed through `resolve_card_description()` in both `extract_enemies()` and `extract_player()`
+- [x] Event option descriptions — FIXED: literal `.title` keys resolved by `_resolve_inline_loc_keys()` in TUI and `ResolveInlineLocKeys()` in CLI
+- [x] Relic descriptions — SmartFormat templates handled by TUI resolver + `_merge_known_relic_vars()` fallback
+- [x] Potion descriptions — SmartFormat templates handled by TUI resolver + vars/known-vars/game_data fallback
+- [x] Shop relic/potion descriptions — templates handled by shop enrichment functions
+
+### Power/buff/debuff classification gaps (new powers in Act 2 data)
+
+- [x] **"Echo Form" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Hailstorm" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Iteration" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Loop" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Pale Blue Dot" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Parry" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Royalties" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Seeking Edge" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Smokestack" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Spinner" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Subroutine" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Trash to Treasure" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Unmovable" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Vigor" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Tangled" not in DEBUFF_NAMES** — FIXED: Added to DEBUFF_NAMES in combat.py. Now colored magenta.
+
+- [x] **"Tender" not in DEBUFF_NAMES** — FIXED: Added to DEBUFF_NAMES in combat.py. Now colored magenta.
+
+- [x] **"Slow" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. On enemies it benefits the player; green coloring alerts the player to exploit it.
+
+- [x] **"Hard to Kill" not in BUFF_NAMES** — FIXED: Added to BUFF_NAMES in combat.py. Enemy self-protection buff; green coloring alerts the player to the damage cap.
+
+### Osty damage cards still lack effective_damage
+
+- [x] **Necrobinder Osty-channeled Attack cards have `effective_damage: None`** — Verified: `extract_hand()` at controller.py line 721 correctly falls back from `stats.damage` -> `stats.ostydamage` -> `stats.calculateddamage` when populating the `damage` field. When `effective_damage` is None, `CardWidget._get_effective_damage()` returns None and the card falls through to local damage calculation using this stats-based value. The local calc may not account for Osty's current HP bonus, but this is an inherent limitation of client-side approximation -- engine-side `effective_damage` for Osty cards is an engine gap, not a TUI issue.
+
+### Shop relic/potion descriptions with engine vars=None
+
+- [x] **Shop relics and potions with `vars: None` resolve via game_data fallback** — Several shop relics (Bronze Scales, Ripple Basin, Meat on the Bone) and potions (Block Potion, Speed Potion, Cure All) have template descriptions but `vars: None` from the engine. However, the shop enrichment functions (`_enrich_relic_description`, `_enrich_potion_description`) successfully resolve these via game_data lookup: Bronze Scales game_data has `thorns=3` (matches `{ThornsPower}` via `_expand_vars`), Ripple Basin has `block=4` (matches `{Block}`), Meat on the Bone has `hp_threshold=50, heal=12` (matches `{HpThreshold}` and `{Heal}`). Similarly, shop potion game_data provides Block Potion `block=12`, Speed Potion `dexterity=5`, Cure All `cards=2`. Not in `_KNOWN_RELIC_VARS`/`_KNOWN_POTION_EXTRA_VARS` but game_data covers them.
+
+### Player-held potion descriptions may have unresolved templates
+
+- [x] **Player potion `Liquid Memories` has `{energyPrefix:energyIcons(1)}` with `vars: None`** — FIXED: `extract_player()` now delegates to `_enrich_potion_description()` from shop.py when `vars` is None/empty, which looks up game_data and `_KNOWN_POTION_EXTRA_VARS` for template resolution. Potions like Block Potion ({Block} with vars=None) now resolve to "12 Block" via game_data. The `{energyPrefix:energyIcons(N)}` pattern continues to resolve via regex regardless of vars.
+
+### Act 2 enemy and boss observations
+
+- [x] **Act 2 enemy names all resolved** — New Act 2 enemies confirmed clean: Exoskeleton, Bowlbug (Rock), Bowlbug (Nectar), Hunter Killer, Myte, Tunneler, Chomper, Thieving Hopper, Parafright, The Obscura. No raw keys.
+
+- [x] **Act 2 boss names resolved** — "The Insatiable" (Ironclad, Regent) and "Knowledge Demon" (Defect) both have clean resolved names in `context.boss.name`.
+
+- [x] **Multi-intent enemies handled correctly** — Confirmed multi-intent enemies in Act 2: Tunneler (Buff+Defend), Myte (Attack+Buff), The Obscura (Attack+Defend), Thieving Hopper (Attack+CardDebuff). All intent types already handled by the TUI.
+
+- [x] **Stun intent appears in boss fights and Act 2** — Ceremonial Beast and Tunneler both show Stun intents. Already handled by TUI.
+
+- [x] **Knowledge Demon boss fight captured** — The boss shows only Debuff intents in the limited data (4 states, round 1 only). No powers detected on the boss itself. Data is too brief to characterize full boss pattern.
+
+### Regent mechanics in new data
+
+- [x] **Stars resource shown correctly** — Stars value (0-3+) present in `state.stars` for Regent combat states. Cards with `star_cost` (Falling Star=2, Astral Pulse=3, Devastate=4, Particle Wall=2) correctly appear with `can_play=False` when stars are insufficient.
+
+- [x] **Enchantments appear in combat hand** — Confirmed: Sharp enchantment (amount=2) appears on Strike cards after the "Self-Help Book" event. `enchantment="Sharp"` and `enchantment_amount=2` fields are properly populated.
+
+- [x] **Afflictions appear in combat hand** — Confirmed: Entangled affliction (amount=1) appears on Strike and Astral Pulse cards. `affliction="Entangled"` and `affliction_amount=1` fields are properly populated.
+
+### Defect orb data in new data
+
+- [x] **Orbs have full data** — Lightning orb confirmed with `passive=3, evoke=8` (and later `passive=5, evoke=10` with Focus). `orb_slots=3` present. All fields match expected schema.
+
+### Map node types
+
+- [x] **"Ancient" node type appears in Act 2 map** — Act 2 map_select includes `type="Ancient"` choices. The TUI already has `"Ancient": ("A", "#ff88cc")` in NODE_DISPLAY. No issue.
+
+### Shop sold-item anomaly
+
+- [x] **Sold-out shop card has `name="?.title"` and `type="?"`** — One shop state in Defect_912619 shows a sold card (is_stocked=false) with `name="?.title"`, `type="?"`, `description="?.description"`, `rarity=None`. The shop screen correctly filters out is_stocked=false items at shop.py:623, so this phantom entry is never displayed. No TUI issue.
+
+### Act 2 act_name
+
+- [x] **Act 2 act_name is "Hive"** — Confirmed in Defect_912619. Distinct from Act 1 "Overgrowth". The TUI displays this on the map screen header via `context.act_name`. No issue.
+
+### card_select stats availability
+
+- [x] **card_select cards have stats in new data** — All card_select cards in the 3 files include stats dicts (e.g., Strike: `{'damage': 6}`, Bash: `{'damage': 8, 'vulnerablepower': 2}`). The only exception is non-stat cards like Zap (`stats=None`) and Dualcast (`stats=None`) which have no numeric stats. This enables proper template resolution for card_select descriptions.
+
+### card_select star_cost for Regent
+
+- [x] **card_select includes star_cost for Regent cards** — Confirmed: Falling Star (star_cost=2) and Astral Pulse (star_cost=3) in Regent_483347 card_select. The GenericScreen already handles this.
+
+### Error recovery decision type
+
+- [x] **error_recovery decision type present but empty in data** — Both Defect_912619 and Regent_483347 have `error_recovery` in their decision set, but no actual error_recovery states were found in the data (likely engine retries succeeded). The TUI's ErrorRecoveryScreen in shared.py handles this decision type.
+
+### Relic descriptions in combat context
+
+- [x] **Relic descriptions in combat have templates but also have vars** — Player relics in combat include both template descriptions and `vars` dicts: Burning Blood `{Heal}` with `vars={'Heal': 6}`, Cracked Core `{Lightning}` with `vars={'Lightning': 1}`, Divine Right `{Stars:starIcons()}` with `vars={'Stars': 3}`. The TUI's `extract_player()` calls `resolve_card_description(raw_desc, relic_vars)` at controller.py:553, which resolves these correctly. Additionally, `_merge_known_relic_vars()` provides fallback for relics missing vars.
+
+### Data capture observations
+
+- [x] **All 3 files use god-mode (HP=9999/9999)** — Standard for audit data capture. God-mode does not affect template resolution, power display, or other fidelity concerns being audited.
+
+- [x] **Ironclad run reaches Act 2 floor 5** — Contains combat, card_reward, card_select, event_choice, map_select, rest_site decisions across Acts 1-2. No shop data for Ironclad in this seed.
+
+- [x] **Defect run reaches Act 2 boss (Knowledge Demon)** — Most complete run. Contains all decision types including shop (Act 1 and Act 2). Boss fight data is brief (4 states).
+
+- [x] **Regent run reaches Act 2 floor 4** — Contains combat, card_reward, card_select, event_choice, map_select, rest_site decisions. Good enchantment/affliction data. No shop data for Regent.

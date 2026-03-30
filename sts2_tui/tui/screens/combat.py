@@ -44,6 +44,7 @@ DEBUFF_NAMES: frozenset[str] = frozenset({
     "Hex", "Entangled", "Infested",
     "Constrict", "Shrink",
     "Doom", "Ringing",
+    "Tangled", "Tender",
 })
 
 BUFF_NAMES: frozenset[str] = frozenset({
@@ -60,6 +61,13 @@ BUFF_NAMES: frozenset[str] = frozenset({
     "Buffer", "Feral", "Pagestorm", "Friendship", "Free Power",
     "Energy Next Turn",
     "Territorial", "Burrowed", "Flutter",
+    # v3 Round 1 additions (Act 2 powers)
+    "Echo Form", "Hailstorm", "Iteration", "Loop",
+    "Pale Blue Dot", "Parry", "Royalties", "Seeking Edge",
+    "Smokestack", "Spinner", "Subroutine", "Trash to Treasure",
+    "Unmovable", "Vigor",
+    # Enemy powers that benefit the player or alert about enemy capability
+    "Slow", "Hard to Kill",
 })
 
 

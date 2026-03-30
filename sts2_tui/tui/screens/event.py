@@ -16,7 +16,7 @@ from textual.widgets import Static
 from textual.reactive import reactive
 from rich.text import Text
 
-from sts2_tui.tui.controller import GameController, _name_str, resolve_card_description
+from sts2_tui.tui.controller import GameController, _name_str, _resolve_inline_loc_keys, resolve_card_description
 from sts2_tui.tui.i18n import L
 from sts2_tui.tui.shared import build_status_footer
 
@@ -67,6 +67,9 @@ class EventOptionWidget(Static):
                 for k, v in option_vars.items()
             }
             resolved = resolve_card_description(desc, resolved_vars)
+            # Resolve literal localization keys embedded in text
+            # (e.g. "Add CLUMSY.title to your Deck" -> "Add Clumsy to your Deck")
+            resolved = _resolve_inline_loc_keys(resolved)
 
             desc_text = Text(justify="center")
             desc_text.append(resolved, style="dim white")
@@ -127,6 +130,8 @@ class EventScreen(Screen):
             # Strip BBCode/rich markup tags the engine sends (e.g. [rainbow ...])
             import re
             description = re.sub(r"\[/?[a-zA-Z][^\]]*\]", "", description)
+            # Resolve literal localization keys (e.g. CLUMSY.title -> Clumsy)
+            description = _resolve_inline_loc_keys(description)
             title.append(f"\n{description}", style="dim")
         title.append(f"\n {L('choose_option')}", style="white")
         return title
