@@ -47,6 +47,8 @@ DEBUFF_NAMES: frozenset[str] = frozenset({
     "Tangled", "Tender",
     # v5 Round 1 additions
     "Neurosurge",
+    # v8
+    "Strangle",
 })
 
 BUFF_NAMES: frozenset[str] = frozenset({
@@ -87,6 +89,9 @@ BUFF_NAMES: frozenset[str] = frozenset({
     # v7 additions
     "Afterimage", "Blur", "Demesne", "Double Damage", "Pillar of Creation",
     "Shadow Step", "Sleight of Flesh", "Synchronize",
+    # v8 additions
+    "Burst", "Countdown", "Fan of Knives", "Infinite Blades",
+    "Master Planner", "Rage", "Shroud", "Star Next Turn",
 })
 
 
