@@ -350,12 +350,12 @@ async def main():
     print(f"EXPLORER: 5 god-mode games (all characters, random seeds)")
     print(f"Seeds: {seeds}")
 
-    tasks = []
+    # Run games sequentially to avoid OOM from 5 .NET processes
+    all_stats = []
     for char, seed in zip(characters, seeds):
         outpath = AUDIT_DIR / f"{char}_{seed}.jsonl"
-        tasks.append(play_one_game(char, seed, outpath))
-
-    all_stats = await asyncio.gather(*tasks)
+        result = await play_one_game(char, seed, outpath)
+        all_stats.append(result)
 
     print(f"\n{'='*60}")
     print("SUMMARY")

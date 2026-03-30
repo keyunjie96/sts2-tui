@@ -1192,6 +1192,20 @@ def play_tuned_run(seed, character="Ironclad", verbose=False, log=True):
             # CARD REWARD
             # ============================================================
             elif decision == "card_reward":
+                # Handle potion rewards first
+                potion_rewards = state.get("potion_rewards") or []
+                while potion_rewards:
+                    if not state.get("potion_slots_full", False):
+                        state = send({"cmd": "action", "action": "collect_potion_reward",
+                                      "args": {"potion_index": 0}})
+                    else:
+                        state = send({"cmd": "action", "action": "skip_potion_reward"})
+                    if state.get("decision") != "card_reward":
+                        break
+                    potion_rewards = state.get("potion_rewards") or []
+                if state.get("decision") != "card_reward":
+                    continue
+
                 cards = state.get("cards", [])
                 pick_idx = pick_card_reward(cards, character, state) if cards else None
 
