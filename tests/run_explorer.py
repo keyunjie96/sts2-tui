@@ -61,7 +61,7 @@ async def play_one_game(character: str, seed: int, outpath: Path) -> dict:
             state = await bridge.start_run(character, seed=str(seed), god_mode=True)
             log_state(state, fout)
 
-            max_steps = 2000  # god-mode full runs need more than 800
+            max_steps = 5000  # god-mode attrition combats burn steps
             stuck_key = ""
             stuck_count = 0
             potion_used_this_combat = False
