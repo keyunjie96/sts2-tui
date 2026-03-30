@@ -73,7 +73,7 @@ class RestOptionWidget(Static):
         opt = self.option
         option_id = opt.get("option_id", "")
         name = opt.get("name", option_id)
-        is_enabled = opt.get("is_enabled", True)
+        is_enabled = opt.get("is_enabled") is not False
 
         icon, label_key, color = OPTION_DISPLAY.get(option_id, ("?", name, "white"))
         label = L(label_key)
@@ -201,7 +201,7 @@ class RestScreen(Screen):
     def action_select_option(self, index: int) -> None:
         if 0 <= index < len(self.options):
             opt = self.options[index]
-            if not opt.get("is_enabled", True):
+            if not opt.get("is_enabled") is not False:
                 self.notify(L("option_unavailable"), severity="warning")
                 return
             self.selected = index
@@ -214,7 +214,7 @@ class RestScreen(Screen):
             return
 
         opt = self.options[self.selected]
-        if not opt.get("is_enabled", True):
+        if not opt.get("is_enabled") is not False:
             self.notify(L("option_unavailable"), severity="warning")
             return
 

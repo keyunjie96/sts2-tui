@@ -52,6 +52,7 @@ def _find_sts2_cli_dir() -> Path | None:
         if p.is_dir():
             return p
     candidates = [
+        Path(__file__).resolve().parent.parent.parent.parent / "deps" / "sts2-cli",
         Path(__file__).resolve().parent.parent.parent.parent.parent / "sts2-cli",
         Path.home() / "Documents" / "Projects" / "sts2-cli",
         Path("/tmp/sts2-cli"),
