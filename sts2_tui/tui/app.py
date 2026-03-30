@@ -60,6 +60,7 @@ class SlsApp(App):
         Binding("ctrl+q", "quit", "Quit", show=False),
         Binding("d", "view_deck", "Deck", show=False),
         Binding("r", "view_relics", "Relics", show=False),
+        Binding("n", "new_run", "New Run", show=False),
         Binding("question_mark", "show_global_help", "Help", show=False),
         Binding("f1", "show_global_help", "Help", show=False),
     ]
@@ -257,7 +258,8 @@ class SlsApp(App):
                 t.append(r.get("name", "?"), style="bold cyan")
             t.append("\n")
 
-        t.append(f"\n\n[Q] {L('quit')}", style="bold yellow")
+        t.append(f"\n\n[N] {L('new_run')}  ", style="bold yellow")
+        t.append(f"[Q] {L('quit')}", style="bold yellow")
 
         while len(self.screen_stack) > 1:
             self.pop_screen()
@@ -415,6 +417,47 @@ class SlsApp(App):
             self.notify(L("no_relics_potions"), severity="warning")
             return
         self.push_screen(RelicViewerOverlay(relics, potions))
+
+    # ------------------------------------------------------------------
+    # New Run (game over replay)
+    # ------------------------------------------------------------------
+
+    def action_new_run(self) -> None:
+        """Start a new run from the game-over screen."""
+        # Only allow when the game-over widget is visible
+        try:
+            self.screen.query_one("#game-over-display")
+        except Exception:
+            return
+        # Clean up game-over widget and restart
+        self.run_worker(self._restart_run(), exclusive=True)
+
+    async def _restart_run(self) -> None:
+        """Shut down the current engine and show character select."""
+        if self.controller:
+            try:
+                await self.controller.quit()
+            except Exception:
+                pass
+        # Remove game-over widget
+        try:
+            widget = self.screen.query_one("#game-over-display")
+            await widget.remove()
+        except Exception:
+            pass
+        # Restart engine
+        try:
+            from sts2_tui.bridge import EngineBridge
+            self.bridge = EngineBridge()
+            ready = await self.bridge.start()
+            if ready.get("type") != "ready":
+                self.notify("Engine failed to restart", severity="error")
+                return
+            self.controller = GameController(self.bridge)
+            self._last_decision = ""
+            self.push_screen(CharacterSelectScreen())
+        except Exception as e:
+            self.notify(f"Restart failed: {e}", severity="error")
 
     # ------------------------------------------------------------------
     # Cleanup

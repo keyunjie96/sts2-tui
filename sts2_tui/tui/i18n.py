@@ -324,6 +324,20 @@ LABELS: dict[str, dict[str, str]] = {
 
         # Pile viewer label
         "piles": "piles",
+
+        # Card select contextual titles (R15-#15)
+        "card_select_upgrade": "UPGRADE A CARD",
+        "card_select_remove": "REMOVE A CARD",
+        "card_select_choose": "CHOOSE A CARD",
+
+        # Potion used feedback (R15-#7)
+        "potion_used": "Used {0}",
+
+        # End turn energy warning (R15-#4)
+        "end_turn_energy_warning": "You have {0} energy remaining! Press E again to end turn.",
+
+        # Game over new run (R15-#1)
+        "new_run": "New Run",
     },
     "zh": {
         # Combat
@@ -601,5 +615,19 @@ LABELS: dict[str, dict[str, str]] = {
 
         # Pile viewer label
         "piles": "牌堆",
+
+        # Card select contextual titles (R15-#15)
+        "card_select_upgrade": "升级一张卡牌",
+        "card_select_remove": "移除一张卡牌",
+        "card_select_choose": "选择一张卡牌",
+
+        # Potion used feedback (R15-#7)
+        "potion_used": "使用了 {0}",
+
+        # End turn energy warning (R15-#4)
+        "end_turn_energy_warning": "你还有 {0} 点能量！再次按 E 结束回合。",
+
+        # Game over new run (R15-#1)
+        "new_run": "新的冒险",
     },
 }

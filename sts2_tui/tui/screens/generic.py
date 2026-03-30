@@ -90,11 +90,12 @@ class GenericScreen(Screen):
                 # Generate contextual title from room_type when engine sends no title
                 room_type = self.state.get("context", {}).get("room_type", "")
                 _CARD_SELECT_TITLES = {
-                    "RestSite": "UPGRADE A CARD",
-                    "Shop": "REMOVE A CARD",
-                    "Merchant": "REMOVE A CARD",
+                    "RestSite": "card_select_upgrade",
+                    "Shop": "card_select_remove",
+                    "Merchant": "card_select_remove",
                 }
-                ctx_title = _CARD_SELECT_TITLES.get(room_type, "CHOOSE A CARD")
+                ctx_key = _CARD_SELECT_TITLES.get(room_type, "card_select_choose")
+                ctx_title = L(ctx_key)
                 title.append(f"  {ctx_title}  ", style="bold white on dark_blue")
             else:
                 title.append(f"  {decision.upper().replace('_', ' ')}  ", style="bold white on dark_blue")

@@ -913,6 +913,8 @@ class RelicBar(Static):
         t.append(f" {L('potion')}  ", style="dim")
         t.append("[D/S/X]", style="bold yellow")
         t.append(f" {L('piles')}  ", style="dim")
+        t.append("[V]", style="bold yellow")
+        t.append(f" {L('deck')}  ", style="dim")
         t.append("[?]", style="bold yellow")
         t.append(f" {L('help')} ", style="dim")
         return t
@@ -1102,6 +1104,7 @@ class CombatScreen(Screen):
         Binding("d", "view_draw_pile", "Draw Pile", show=False),
         Binding("s", "view_discard_pile", "Discard Pile", show=False),
         Binding("x", "view_exhaust_pile", "Exhaust Pile", show=False),
+        Binding("v", "view_full_deck", "View Deck", show=False),
         Binding("question_mark", "show_help", "Help", show=False),
     ]
 
@@ -1117,6 +1120,7 @@ class CombatScreen(Screen):
         self._stuck_count = 0
         self._last_state_key = ""
         self._refreshing = False
+        self._end_turn_confirmed = False
 
     def _has_orbs(self) -> bool:
         """Check if the player has orb slots (Defect character)."""
@@ -1163,8 +1167,19 @@ class CombatScreen(Screen):
     def _enemy_widgets(self) -> list[EnemyWidget]:
         enemies = extract_enemies(self.state)
         living = [e for e in enemies if not e.get("is_dead")]
-        # Skip targeting indicator when there's only 1 enemy (auto-selected)
-        show_target = len(living) > 1
+        # Determine if the currently selected card needs a target
+        # Hide the target indicator for Self/None target types and when only 1 enemy
+        hand = extract_hand(self.state)
+        selected_card_needs_target = True
+        if 0 <= self.selected_card < len(hand):
+            card = hand[self.selected_card]
+            target_type = card.get("target_type", "AnyEnemy")
+            if target_type in ("Self", "None", "AllEnemy"):
+                selected_card_needs_target = False
+        else:
+            # No card selected -- still show targeting for awareness
+            selected_card_needs_target = True
+        show_target = len(living) > 1 and selected_card_needs_target
         # Build a mapping from living enemies to their target index
         living_idx = 0
         widgets = []
@@ -1252,6 +1267,9 @@ class CombatScreen(Screen):
         decision = state.get("decision", "")
 
         if decision == "combat_play":
+            # Reset end-turn confirmation for new state
+            self._end_turn_confirmed = False
+
             # Check for stuck state (engine bug: end_turn doesn't advance)
             fp = self._state_fingerprint(state)
             if fp == self._last_state_key:
@@ -1401,6 +1419,25 @@ class CombatScreen(Screen):
     async def action_end_turn(self) -> None:
         if self._busy:
             return
+        # Warn once if ending turn with energy and playable cards remaining
+        if not self._end_turn_confirmed:
+            player = extract_player(self.state)
+            energy = player.get("energy", 0)
+            if energy > 0:
+                hand = extract_hand(self.state)
+                playable = [
+                    c for c in hand
+                    if c.get("can_play", True)
+                    and (c.get("cost", 0) <= energy or c.get("cost", 0) < 0)
+                ]
+                if playable:
+                    self.notify(
+                        L("end_turn_energy_warning").format(energy),
+                        severity="warning",
+                    )
+                    self._end_turn_confirmed = True
+                    return
+        self._end_turn_confirmed = False
         self._busy = True
         try:
             state = await self.controller.end_turn()
@@ -1432,12 +1469,20 @@ class CombatScreen(Screen):
 
     async def _do_use_potion(self, potion_index: int, target_index: int | None) -> None:
         """Execute the potion use action and handle the response."""
+        # Remember the potion name before using it (for feedback notification)
+        player = extract_player(self.state)
+        potion_name = "?"
+        for p in player.get("potions", []):
+            if p.get("index") == potion_index:
+                potion_name = p.get("name", "?")
+                break
         self._busy = True
         try:
             state = await self.controller.use_potion(potion_index, target_index)
             if state.get("type") == "error":
                 self.notify(state.get("message", "Cannot use potion."), severity="error")
             else:
+                self.notify(L("potion_used").format(potion_name), timeout=2)
                 await self._handle_response(state)
         finally:
             self._busy = False
@@ -1489,3 +1534,7 @@ class CombatScreen(Screen):
 
     def action_view_exhaust_pile(self) -> None:
         self._show_pile_overlay("exhaust", L("exhaust_pile"))
+
+    def action_view_full_deck(self) -> None:
+        """Open the full deck viewer (V key) -- delegates to the app's deck viewer."""
+        self.app.action_view_deck()
