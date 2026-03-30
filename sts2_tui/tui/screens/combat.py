@@ -81,6 +81,9 @@ BUFF_NAMES: frozenset[str] = frozenset({
     "Nostalgia", "Plating", "Retain Hand", "The Gambit", "Thunder",
     # v5 Round 1 additions (enemy buffs)
     "Conqueror", "Debilitate", "Vital Spark",
+    # v6 Round 1 additions
+    "Automation", "Black Hole", "Block Next Turn", "Coolant", "Demon Form",
+    "Haunt", "Rolling Boulder", "Spectrum Shift", "Sword Sage",
 })
 
 

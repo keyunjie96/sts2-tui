@@ -391,16 +391,45 @@ def resolve_card_description(description: str, stats: dict[str, Any] | None,
     # replaced a plural template. Common patterns:
     # "draw 2 additional 2." -> "draw 2 additional."
     # "defeating 5 5." -> "defeating 5."
-    # Allow 0-2 intervening words between the duplicated numbers.
+    # "gain 1 1 Energy" -> "gain 1 Energy"
+    #
+    # Two cases:
+    # 1) Adjacent duplicate numbers (0 intervening words): always collapse.
+    # 2) 1-2 intervening words: only collapse when the second number is
+    #    followed by punctuation or end-of-string, meaning the number
+    #    replaced a plural word (e.g., "2 additional 2." but NOT
+    #    "1 Strength and 1 Dexterity").
+    # Case 1: adjacent duplicates ("5 5.", "1 1 Energy")
+    text = re.sub(r"\b(\d+) \1\b(?=[^0-9])", r"\1", text)
+    # Case 2: 1-2 words between, second number before punctuation/EOL
+    # The lookahead ensures the second number is followed by punctuation
+    # (possibly after whitespace) or end-of-string — NOT by another word
+    # like "Dexterity". This avoids false positives on legitimate repeated
+    # stat values like "lose 1 Strength and 1 Dexterity".
     def _dedup_numbers(m: re.Match[str]) -> str:
         return m.group(1) + m.group(3)
-    text = re.sub(r"(\b(\d+))(\s+(?:\w+\s+){0,2})\2\b(?=[^0-9])", _dedup_numbers, text)
+    text = re.sub(
+        r"(\b(\d+))(\s+(?:\w+\s+){1,2})\2\b(?=\s*[.,;:]|\s*$)",
+        _dedup_numbers,
+        text,
+    )
+
+    # Fix "0 N Energy" pattern where engine concatenated cost (0) with
+    # energyPrefix resolution (N Energy): "costs 0 1 Energy" -> "costs 0 Energy"
+    text = re.sub(r"\b0 \d+ Energy\b", "0 Energy", text)
+
+    # Fix "0N Energy" pattern without space: "01 Energy" -> "0 Energy"
+    text = re.sub(r"\b0(\d+) Energy\b", "0 Energy", text)
 
     # Fix concatenated "letter0digit" patterns from engine joining resolved values
     # without space: "damage01" -> "damage 1", "a\n01" -> "a\n1"
     text = re.sub(r"([a-zA-Z])0(\d)", r"\1 \2", text)
     # Also at line start: "\n01" -> "\n1"
     text = re.sub(r"(\n)0(\d)", r"\1\2", text)
+
+    # Fix trailing "N" stray digit after "damage" from engine concat:
+    # "Deal 13 damage0." -> "Deal 13 damage."
+    text = re.sub(r"(damage)\d+([.\s])", r"\1\2", text)
 
     # Fix missing space in engine localization templates (e.g. "damagefor" -> "damage for")
     text = re.sub(r"damage(for)", r"damage \1", text)
