@@ -261,6 +261,69 @@ LABELS: dict[str, dict[str, str]] = {
         # Status bar
         "hp_label": "HP",
         "gold_label": "Gold",
+
+        # Combat notifications (C9-5 through C9-10)
+        "engine_stuck": "Engine stuck -- combat cannot advance. Press [E] to end turn or [Q] to quit.",
+        "defeated_notify": "Defeated!",
+        "hand_empty": "Hand empty -- press E to end turn",
+        "no_card_selected": "No card selected! Press [1-9]",
+        "invalid_card_selection": "Invalid card selection",
+        "cannot_play_card": "Cannot play that card!",
+
+        # Event / rest shared notifications (C9-11, C9-12)
+        "option_locked": "That option is locked.",
+        "option_unavailable": "That option is unavailable.",
+        "select_option_first": "Select an option first!",
+        "must_choose_option": "You must choose an option.",
+
+        # Card reward notification (C9-13)
+        "must_select_card": "You must select a card",
+
+        # Generic screen constraint messages (C9-14)
+        "must_keep_min_selected": "Must keep at least {0} selected",
+        "max_selections": "Max {0} selections",
+        "must_select_min_cards": "You must select at least {0} card(s)",
+
+        # Map notifications (C9-15)
+        "press_q_quit": "Press Q to quit the game.",
+        "no_path_at_index": "No path at that index",
+
+        # App overlay notifications (C9-16)
+        "no_deck_data": "No deck data available yet.",
+        "no_game_data": "No game data available yet.",
+        "no_relics_potions": "No relics or potions yet.",
+
+        # Empty placeholders (C9-17, C9-18, C9-19)
+        "empty_pile": "(empty)",
+        "none_placeholder": "(none)",
+
+        # Intent labels (C9-30)
+        "intent_attack": "Attack",
+        "intent_defend": "Defend",
+        "intent_buff": "Buff",
+        "intent_debuff": "Debuff",
+        "intent_strong_debuff": "Strong Debuff",
+        "intent_status": "Status",
+        "intent_heal": "Heal",
+        "intent_stun": "Stun",
+        "intent_summon": "Summon",
+        "intent_sleep": "Zzz",
+        "intent_card_debuff": "Card Debuff",
+        "intent_escape": "Escape",
+
+        # Help overlay bindings (C9-20, C9-21, C9-22, C9-23)
+        "view_draw_pile": "View draw pile",
+        "view_discard_pile": "View discard pile",
+        "view_exhaust_pile": "View exhaust pile",
+        "scroll_map": "Scroll map",
+        "potion_select_slot": "Select potion slot",
+        "potion_toggle_discard": "Toggle discard mode",
+        "potion_cycle_target": "Cycle target",
+        "potion_confirm_use": "Confirm / use",
+        "potion_cancel_close": "Cancel / close",
+
+        # Pile viewer label
+        "piles": "piles",
     },
     "zh": {
         # Combat
@@ -475,5 +538,68 @@ LABELS: dict[str, dict[str, str]] = {
         # Status bar
         "hp_label": "生命",
         "gold_label": "金币",
+
+        # Combat notifications (C9-5 through C9-10)
+        "engine_stuck": "引擎卡住——战斗无法继续。按 [E] 结束回合或 [Q] 退出。",
+        "defeated_notify": "战败！",
+        "hand_empty": "手牌为空——按 E 结束回合",
+        "no_card_selected": "未选择卡牌！按 [1-9]",
+        "invalid_card_selection": "无效的卡牌选择",
+        "cannot_play_card": "无法打出该卡牌！",
+
+        # Event / rest shared notifications (C9-11, C9-12)
+        "option_locked": "该选项已锁定。",
+        "option_unavailable": "该选项不可用。",
+        "select_option_first": "请先选择一个选项！",
+        "must_choose_option": "必须选择一个选项。",
+
+        # Card reward notification (C9-13)
+        "must_select_card": "必须选择一张卡牌",
+
+        # Generic screen constraint messages (C9-14)
+        "must_keep_min_selected": "至少保留 {0} 个选择",
+        "max_selections": "最多选择 {0} 个",
+        "must_select_min_cards": "至少选择 {0} 张卡牌",
+
+        # Map notifications (C9-15)
+        "press_q_quit": "按 Q 退出游戏。",
+        "no_path_at_index": "该索引没有路径",
+
+        # App overlay notifications (C9-16)
+        "no_deck_data": "暂无牌组数据。",
+        "no_game_data": "暂无游戏数据。",
+        "no_relics_potions": "暂无遗物或药水。",
+
+        # Empty placeholders (C9-17, C9-18, C9-19)
+        "empty_pile": "（空）",
+        "none_placeholder": "（无）",
+
+        # Intent labels (C9-30)
+        "intent_attack": "攻击",
+        "intent_defend": "防御",
+        "intent_buff": "增益",
+        "intent_debuff": "减益",
+        "intent_strong_debuff": "强力减益",
+        "intent_status": "状态",
+        "intent_heal": "治疗",
+        "intent_stun": "眩晕",
+        "intent_summon": "召唤",
+        "intent_sleep": "睡眠",
+        "intent_card_debuff": "卡牌减益",
+        "intent_escape": "逃跑",
+
+        # Help overlay bindings (C9-20, C9-21, C9-22, C9-23)
+        "view_draw_pile": "查看抽牌堆",
+        "view_discard_pile": "查看弃牌堆",
+        "view_exhaust_pile": "查看消耗堆",
+        "scroll_map": "滚动地图",
+        "potion_select_slot": "选择药水槽位",
+        "potion_toggle_discard": "切换丢弃模式",
+        "potion_cycle_target": "切换目标",
+        "potion_confirm_use": "确认 / 使用",
+        "potion_cancel_close": "取消 / 关闭",
+
+        # Pile viewer label
+        "piles": "牌堆",
     },
 }

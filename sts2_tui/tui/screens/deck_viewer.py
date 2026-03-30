@@ -18,7 +18,7 @@ from rich.text import Text
 
 from sts2_tui.tui.controller import _name_str, resolve_card_description
 from sts2_tui.tui.i18n import L
-from sts2_tui.tui.shared import CARD_TYPE_COLORS, build_upgrade_preview
+from sts2_tui.tui.shared import CARD_TYPE_COLORS, KEYWORD_ICONS, RARITY_COLORS, build_upgrade_preview
 
 log = logging.getLogger(__name__)
 
@@ -87,6 +87,17 @@ def _format_deck_card(card: dict) -> Text:
     # Name (with + suffix if upgraded)
     display_name = f"{name}+" if upgraded else name
     t.append(display_name, style=f"bold {color}")
+    # Keyword icons (C9-1)
+    for kw in card.get("keywords") or []:
+        if isinstance(kw, str):
+            icon = KEYWORD_ICONS.get(kw.title(), "")
+            if icon:
+                t.append(f" {icon}", style="bold red" if kw.title() == "Exhaust" else "bold cyan")
+    # Rarity badge (C9-2)
+    rarity = card.get("rarity", "")
+    if rarity:
+        rarity_label, rarity_color = RARITY_COLORS.get(rarity, (rarity, "dim"))
+        t.append(f" [{rarity_label}]", style=f"bold {rarity_color}")
     # Description
     if resolved_desc:
         t.append(f"  {resolved_desc}", style="dim white")
@@ -273,7 +284,7 @@ class RelicViewerOverlay(Screen):
                 if desc:
                     t.append(f"\n     {desc}", style="dim white")
         else:
-            t.append("\n  (none)\n", style="dim")
+            t.append(f"\n  {L('none_placeholder')}\n", style="dim")
 
         # Potions section
         t.append(f"\n\n  {L('potions')}\n", style="bold green underline")
@@ -289,7 +300,7 @@ class RelicViewerOverlay(Screen):
                 if desc:
                     t.append(f"\n     {desc}", style="dim white")
         else:
-            t.append("\n  (none)\n", style="dim")
+            t.append(f"\n  {L('none_placeholder')}\n", style="dim")
 
         t.append("\n")
         return t

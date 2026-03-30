@@ -650,7 +650,7 @@ class MapScreen(Screen):
         # The map is typically the "idle" screen between rooms, so Esc
         # should be a no-op rather than killing the session.
         if not self._esc_warned:
-            self.notify("Press Q to quit the game.", severity="warning")
+            self.notify(L("press_q_quit"), severity="warning")
             self._esc_warned = True
 
     async def action_select_path(self, index: int) -> None:
@@ -658,7 +658,7 @@ class MapScreen(Screen):
             return
         choices = self.state.get("choices", [])
         if index < 0 or index >= len(choices):
-            self.notify("No path at that index", severity="warning")
+            self.notify(L("no_path_at_index"), severity="warning")
             return
 
         choice = choices[index]

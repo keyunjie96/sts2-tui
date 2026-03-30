@@ -133,7 +133,7 @@ class TopBar(Static):
                     t.append(" ", style="dim")
                 t.append(f"[{pot['name']}]", style="bold cyan")
         else:
-            t.append("(none)", style="dim")
+            t.append(L("none_placeholder"), style="dim")
         return t
 
 
@@ -288,33 +288,33 @@ class EnemyWidget(Static):
                 # Engine sends TOTAL damage — show per-hit × hits (total)
                 per_hit = dmg // hits
                 t.append("\u2694 ", style="bold red")
-                t.append(f"Attack {per_hit}x{hits}", style="bold red")
+                t.append(f"{L('intent_attack')} {per_hit}x{hits}", style="bold red")
                 t.append(f" ({dmg})", style="red")
             else:
                 t.append("\u2694 ", style="bold red")
-                t.append(f"Attack {dmg}", style="bold red")
+                t.append(f"{L('intent_attack')} {dmg}", style="bold red")
             has_attack = True
 
         # Show additional intents (Defend, Buff, etc.) alongside attack
         # For multi-intent enemies like Attack+Defend, show both
         _SECONDARY_INTENTS: list[tuple[str, str, str, str]] = [
-            # (flag_key, icon, label, style)
-            ("is_defend", "\u26e8", "Defend", "bold cyan"),
-            ("is_buff", "\u2b06", "Buff", "bold green"),
-            ("is_debuff_strong", "\u2b07\u2b07", "Strong Debuff", "bold bright_magenta"),
-            ("is_debuff", "\u2b07", "Debuff", "bold magenta"),
-            ("is_status_card", "\u2753", "Status", "bold white"),
-            ("is_heal", "\u2764", "Heal", "bold green"),
-            ("is_stun", "\u26a1", "Stun", "bold yellow"),
-            ("is_summon", "\u2728", "Summon", "bold white"),
-            ("is_sleep", "\U0001f4a4", "Zzz", "dim cyan"),
-            ("is_card_debuff", "\U0001f0cf", "Card Debuff", "bold magenta"),
-            ("is_escape", "\U0001f3c3", "Escape", "bold yellow"),
+            # (flag_key, icon, i18n_key, style)
+            ("is_defend", "\u26e8", "intent_defend", "bold cyan"),
+            ("is_buff", "\u2b06", "intent_buff", "bold green"),
+            ("is_debuff_strong", "\u2b07\u2b07", "intent_strong_debuff", "bold bright_magenta"),
+            ("is_debuff", "\u2b07", "intent_debuff", "bold magenta"),
+            ("is_status_card", "\u2753", "intent_status", "bold white"),
+            ("is_heal", "\u2764", "intent_heal", "bold green"),
+            ("is_stun", "\u26a1", "intent_stun", "bold yellow"),
+            ("is_summon", "\u2728", "intent_summon", "bold white"),
+            ("is_sleep", "\U0001f4a4", "intent_sleep", "dim cyan"),
+            ("is_card_debuff", "\U0001f0cf", "intent_card_debuff", "bold magenta"),
+            ("is_escape", "\U0001f3c3", "intent_escape", "bold yellow"),
         ]
 
         secondary_shown = False
         debuff_strong_shown = False
-        for flag_key, icon, label, style in _SECONDARY_INTENTS:
+        for flag_key, icon, i18n_key, style in _SECONDARY_INTENTS:
             if e.get(flag_key):
                 # Skip plain "Debuff" when "Strong Debuff" is already shown
                 if flag_key == "is_debuff" and debuff_strong_shown:
@@ -322,7 +322,7 @@ class EnemyWidget(Static):
                 if has_attack or secondary_shown:
                     t.append(" + ", style="dim")
                 t.append(f"{icon} ", style=style)
-                t.append(label, style=style)
+                t.append(L(i18n_key), style=style)
                 secondary_shown = True
                 if flag_key == "is_debuff_strong":
                     debuff_strong_shown = True
@@ -878,7 +878,7 @@ class RelicBar(Static):
         t = Text()
         t.append(f" {L('relics')}: ", style="dim")
         if not relics:
-            t.append("(none)", style="dim")
+            t.append(L("none_placeholder"), style="dim")
             return t
         # Show relics with overflow indicator when there are too many
         # Approximate: each relic ~15 chars + separator; cap at ~6 visible
@@ -912,7 +912,7 @@ class RelicBar(Static):
         t.append("[P]", style="bold yellow")
         t.append(f" {L('potion')}  ", style="dim")
         t.append("[D/S/X]", style="bold yellow")
-        t.append(" piles  ", style="dim")
+        t.append(f" {L('piles')}  ", style="dim")
         t.append("[?]", style="bold yellow")
         t.append(f" {L('help')} ", style="dim")
         return t
@@ -959,7 +959,7 @@ class PileViewerOverlay(Screen):
     def _body(self) -> Text:
         t = Text()
         if not self.cards:
-            t.append("\n  (empty)\n", style="dim")
+            t.append(f"\n  {L('empty_pile')}\n", style="dim")
             return t
 
         if self.grouped:
@@ -1258,7 +1258,7 @@ class CombatScreen(Screen):
                 self._stuck_count += 1
                 if self._stuck_count > 3:
                     self.notify(
-                        "Engine stuck -- combat cannot advance. Press [E] to end turn or [Q] to quit.",
+                        L("engine_stuck"),
                         severity="error",
                     )
                     return
@@ -1283,7 +1283,7 @@ class CombatScreen(Screen):
 
                 self.app.push_screen(VictoryOverlay(), callback=on_victory_dismiss)
             else:
-                self.notify("Defeated!", severity="error")
+                self.notify(L("defeated_notify"), severity="warning")
 
                 def on_defeat_dismiss(won: bool | None) -> None:
                     self.app.post_message(CombatDefeatMessage(state))
@@ -1362,18 +1362,18 @@ class CombatScreen(Screen):
         self._stuck_count = 0
         hand = extract_hand(self.state)
         if not hand:
-            self.notify("Hand empty \u2014 press E to end turn", severity="warning")
+            self.notify(L("hand_empty"), severity="warning")
             return
         if self.selected_card < 0:
-            self.notify("No card selected! Press [1-9]", severity="warning")
+            self.notify(L("no_card_selected"), severity="warning")
             return
         if self.selected_card >= len(hand):
-            self.notify("Invalid card selection", severity="error")
+            self.notify(L("invalid_card_selection"), severity="warning")
             return
 
         card = hand[self.selected_card]
         if not card.get("can_play", True):
-            self.notify("Cannot play that card!", severity="error")
+            self.notify(L("cannot_play_card"), severity="warning")
             return
 
         self._busy = True

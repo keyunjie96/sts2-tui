@@ -289,13 +289,13 @@ class GenericScreen(Screen):
         min_sel = self.state.get("min_select") or 0
         if self.selected in self._selected_indices:
             if len(self._selected_indices) <= min_sel:
-                self.notify(f"Must keep at least {min_sel} selected", severity="warning")
+                self.notify(L("must_keep_min_selected").format(min_sel), severity="warning")
                 return
             self._selected_indices.discard(self.selected)
         elif len(self._selected_indices) < max_sel:
             self._selected_indices.add(self.selected)
         else:
-            self.notify(f"Max {max_sel} selections", severity="warning")
+            self.notify(L("max_selections").format(max_sel), severity="warning")
             return
         # Re-render
         try:
@@ -318,7 +318,7 @@ class GenericScreen(Screen):
             if decision == "card_select" and self._is_multi_select and self._selected_indices:
                 # Multi-select: validate minimum selection count
                 if min_sel is not None and len(self._selected_indices) < min_sel:
-                    self.notify(f"You must select at least {min_sel} card(s)", severity="warning")
+                    self.notify(L("must_select_min_cards").format(min_sel), severity="warning")
                     return
                 # Multi-select: send all checked indices as comma-separated
                 indices_str = ",".join(
@@ -344,7 +344,7 @@ class GenericScreen(Screen):
             else:
                 # No selection -- block if card_select with mandatory minimum
                 if decision == "card_select" and min_sel is not None and min_sel >= 1:
-                    self.notify("You must select a card", severity="warning")
+                    self.notify(L("must_select_card"), severity="warning")
                     return
                 # No selection -- just proceed
                 if decision == "shop":
@@ -374,7 +374,7 @@ class GenericScreen(Screen):
         if decision == "card_select":
             min_sel = self.state.get("min_select")
             if min_sel is not None and min_sel >= 1:
-                self.notify("You must select a card", severity="warning")
+                self.notify(L("must_select_card"), severity="warning")
                 return
         self._busy = True
         try:

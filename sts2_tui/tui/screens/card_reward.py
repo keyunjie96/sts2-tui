@@ -336,7 +336,7 @@ class CardRewardScreen(Screen):
         if self._busy:
             return
         if not self.can_skip:
-            self.notify("You must select a card", severity="warning")
+            self.notify(L("must_select_card"), severity="warning")
             return
         self._busy = True
         try:

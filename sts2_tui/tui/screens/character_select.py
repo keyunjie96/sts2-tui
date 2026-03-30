@@ -113,6 +113,7 @@ class CharacterSelectScreen(Screen):
         self.characters = CHARACTERS
         self._is_composed = False
         self._refreshing = False
+        self._busy = False
 
     def _build_footer(self) -> Text:
         bindings = Text()
@@ -179,6 +180,9 @@ class CharacterSelectScreen(Screen):
             self.selected = index
 
     def action_confirm(self) -> None:
+        if self._busy:
+            return
+        self._busy = True
         char = self.characters[self.selected]
         self.app.post_message(CharacterSelectedMessage(char["id"]))
         self.app.pop_screen()

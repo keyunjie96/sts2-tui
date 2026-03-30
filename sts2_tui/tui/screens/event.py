@@ -194,7 +194,7 @@ class EventScreen(Screen):
                         *widgets,
                         id="rest-options",
                     ) if widgets else Static(
-                        Text("  No options available.\n", style="dim"),
+                        Text(f"  {L('no_options')}\n", style="dim"),
                         id="rest-options",
                     ),
                     Static(self._footer_text(), id="rest-footer"),
@@ -211,10 +211,10 @@ class EventScreen(Screen):
         if 0 <= index < len(self.options):
             opt = self.options[index]
             if opt.get("is_locked", False):
-                self.notify("That option is locked.", severity="warning")
+                self.notify(L("option_locked"), severity="warning")
                 return
             if not opt.get("is_enabled", True):
-                self.notify("That option is unavailable.", severity="warning")
+                self.notify(L("option_unavailable"), severity="warning")
                 return
             self.selected = index
 
@@ -222,15 +222,15 @@ class EventScreen(Screen):
         if self._busy:
             return
         if self.selected < 0:
-            self.notify("Select an option first!", severity="warning")
+            self.notify(L("select_option_first"), severity="warning")
             return
 
         opt = self.options[self.selected]
         if opt.get("is_locked", False):
-            self.notify("That option is locked.", severity="warning")
+            self.notify(L("option_locked"), severity="warning")
             return
         if not opt.get("is_enabled", True):
-            self.notify("That option is unavailable.", severity="warning")
+            self.notify(L("option_unavailable"), severity="warning")
             return
 
         option_index = opt.get("index", self.selected)
@@ -253,7 +253,7 @@ class EventScreen(Screen):
         if self._busy:
             return
         if not self._can_leave:
-            self.notify("You must choose an option.", severity="warning")
+            self.notify(L("must_choose_option"), severity="warning")
             return
         self._busy = True
         try:

@@ -14,6 +14,7 @@ from textual.widgets import Static
 from rich.text import Text
 
 from sts2_tui.tui.controller import GameController
+from sts2_tui.tui.i18n import L
 
 from sts2_tui.tui.screens.combat import (
     CombatScreen,
@@ -138,8 +139,6 @@ class SlsApp(App):
 
     def _route_to_screen(self, state: dict) -> None:
         """Push the appropriate screen based on the response decision type."""
-        from sts2_tui.tui.i18n import L
-
         if state.get("type") in ("error", "error_recovery"):
             error_msg = state.get("message") or state.get("error") or "Engine error"
             self.push_screen(ErrorRecoveryScreen(error_msg))
@@ -219,7 +218,6 @@ class SlsApp(App):
         floor = ctx.get("floor", "?")
         relics = player_data.get("relics", [])
 
-        from sts2_tui.tui.i18n import L
         t = Text(justify="center")
         if victory:
             t.append(f"\n\n  {L('victory')}  \n\n", style="bold white on dark_green")
@@ -390,7 +388,7 @@ class SlsApp(App):
             return
         deck = self.controller.player_deck
         if not deck:
-            self.notify("No deck data available yet.", severity="warning")
+            self.notify(L("no_deck_data"), severity="warning")
             return
         self.push_screen(DeckViewerOverlay(deck))
 
@@ -407,14 +405,14 @@ class SlsApp(App):
             return
         state = self.controller.current_state
         if not state:
-            self.notify("No game data available yet.", severity="warning")
+            self.notify(L("no_game_data"), severity="warning")
             return
         from sts2_tui.tui.controller import extract_player
         player = extract_player(state)
         relics = player.get("relics", [])
         potions = player.get("potions", [])
         if not relics and not potions:
-            self.notify("No relics or potions yet.", severity="warning")
+            self.notify(L("no_relics_potions"), severity="warning")
             return
         self.push_screen(RelicViewerOverlay(relics, potions))
 

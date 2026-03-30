@@ -149,14 +149,20 @@ SCREEN_BINDINGS: dict[str, list[tuple[str, str]]] = {
         ("[Enter]", "Play card"),
         ("[E]", "End turn"),
         ("[P]", "Use potion"),
+        ("[D]", "View draw pile"),
+        ("[S]", "View discard pile"),
+        ("[X]", "View exhaust pile"),
     ],
     "MapScreen": [
         ("[1-9]", "Select path"),
+        ("[Up/Down]", "Scroll map"),
     ],
     "CardRewardScreen": [
         ("[1-5]", "Select card"),
         ("[Enter]", "Confirm selection"),
         ("[Esc]", "Skip reward"),
+        ("[P]", "Collect potion"),
+        ("[X]", "Skip potions"),
     ],
     "RestScreen": [
         ("[1-6]", "Select option"),
@@ -182,6 +188,13 @@ SCREEN_BINDINGS: dict[str, list[tuple[str, str]]] = {
         ("[Up/Down]", "Navigate"),
         ("[Enter]", "Confirm"),
         ("[Esc]", "Leave"),
+    ],
+    "PotionMenuOverlay": [
+        ("[1-5]", "Select potion slot"),
+        ("[D]", "Toggle discard mode"),
+        ("[Tab]", "Cycle target"),
+        ("[Enter]", "Confirm / use"),
+        ("[Esc]", "Cancel / close"),
     ],
 }
 
