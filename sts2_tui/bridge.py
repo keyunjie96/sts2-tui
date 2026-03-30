@@ -452,6 +452,15 @@ class EngineBridge:
                 )
                 try:
                     crash_log = Path.home() / ".sts2-tui-crash.log"
+                    # Rotate: if log exceeds 1 MB, truncate to last 500 KB
+                    _MAX_LOG_SIZE = 1_048_576   # 1 MB
+                    _KEEP_TAIL = 524_288        # 500 KB
+                    try:
+                        if crash_log.is_file() and crash_log.stat().st_size > _MAX_LOG_SIZE:
+                            data = crash_log.read_bytes()
+                            crash_log.write_bytes(data[-_KEEP_TAIL:])
+                    except Exception:
+                        pass  # best-effort rotation
                     with open(crash_log, "a") as f:
                         from datetime import datetime
                         f.write(f"\n--- {datetime.now().isoformat()} ---\n")

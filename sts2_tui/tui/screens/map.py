@@ -436,7 +436,8 @@ def _render_fallback_choices(state: dict) -> Text:
     """
     choices = state.get("choices", [])
     ctx = state.get("context", {})
-    floor = ctx.get("floor", "?")
+    raw_floor = ctx.get("floor", 0)
+    floor = int(raw_floor) if isinstance(raw_floor, (int, float)) else 0
     t = Text()
 
     t.append(f"\n  {L('choose_path')}", style="bold white")
@@ -558,14 +559,15 @@ class MapScreen(Screen):
         seen_coords: set[tuple[int, int]] = set()
         choices: list[dict] = []
         for ch in raw_choices:
-            coord = (ch["col"], ch["row"])
+            coord = (ch.get("col", 0), ch.get("row", 0))
             if coord not in seen_coords:
                 seen_coords.add(coord)
                 choices.append(ch)
-        choice_set = {(ch["col"], ch["row"]) for ch in choices}
-        choice_indices = {(ch["col"], ch["row"]): i for i, ch in enumerate(choices)}
+        choice_set = {(ch.get("col", 0), ch.get("row", 0)) for ch in choices}
+        choice_indices = {(ch.get("col", 0), ch.get("row", 0)): i for i, ch in enumerate(choices)}
         ctx = self.state.get("context", {})
-        floor = ctx.get("floor", 0)
+        raw_floor = ctx.get("floor", 0)
+        floor = int(raw_floor) if isinstance(raw_floor, (int, float)) else 0
 
         if self._map_data and self._map_data.get("type") == "map":
             text = _render_full_map(self._map_data, choice_set, choice_indices, floor)
@@ -577,13 +579,12 @@ class MapScreen(Screen):
     def _header_text(self) -> Text:
         ctx = self.state.get("context", {})
         act = ctx.get("act", "?")
-        floor = ctx.get("floor", "?")
+        raw_floor = ctx.get("floor", 0)
+        floor = int(raw_floor) if isinstance(raw_floor, (int, float)) else 0
         boss = ctx.get("boss", {})
         boss_name = _name_str(boss.get("name")) if boss else "?"
         # Display floor 0 (act transition) as floor 1 for player clarity
-        display_floor = floor
-        if isinstance(floor, int) and floor == 0:
-            display_floor = 1
+        display_floor = floor if floor > 0 else 1
 
         t = Text(justify="center")
         t.append(f"  {L('map')}  ", style="bold white")
@@ -666,8 +667,8 @@ class MapScreen(Screen):
         self._busy = True
         try:
             state = await self.controller.select_map_node(
-                col=choice["col"],
-                row=choice["row"],
+                col=choice.get("col", 0),
+                row=choice.get("row", 0),
             )
 
             if state.get("type") == "error":

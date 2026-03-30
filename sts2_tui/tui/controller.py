@@ -695,13 +695,15 @@ def extract_enemies(state: dict) -> list[dict]:
                 intent_parts.append(itype)
         intent_summary = " + ".join(intent_parts) if intent_parts else ""
 
-        hp_val = e.get("hp") or 0
+        e_max_hp = max(0, e.get("max_hp") or 0)
+        hp_val = max(0, min(e.get("hp") or 0, e_max_hp)) if e_max_hp > 0 else max(0, e.get("hp") or 0)
+        e_block = max(0, e.get("block") or 0)
         result.append({
             "index": e.get("index", 0),
             "name": _name_str(e.get("name")),
             "hp": hp_val,
-            "max_hp": e.get("max_hp") or 0,
-            "block": e.get("block") or 0,
+            "max_hp": e_max_hp,
+            "block": e_block,
             "intent_summary": intent_summary,
             "intent_damage": intent_damage,
             "intent_hits": intent_hits,
@@ -852,18 +854,26 @@ def extract_player(state: dict) -> dict:
     # Regent star resource
     stars: int | None = state.get("stars")
 
+    # --- Sanity-clamp numeric fields ---
+    max_hp = max(0, p.get("max_hp") or 0)
+    hp = max(0, min(p.get("hp") or 0, max_hp)) if max_hp > 0 else max(0, p.get("hp") or 0)
+    energy = max(0, state.get("energy") or 0)
+    max_energy = max(0, state.get("max_energy") or 0)
+    gold = max(0, p.get("gold") or 0)
+    block = max(0, p.get("block") or 0)
+
     return {
         "name": _name_str(p.get("name")),
-        "hp": p.get("hp") or 0,
-        "max_hp": p.get("max_hp") or 0,
-        "block": p.get("block") or 0,
-        "energy": state.get("energy") or 0,
-        "max_energy": state.get("max_energy") or 0,
-        "gold": p.get("gold") or 0,
+        "hp": hp,
+        "max_hp": max_hp,
+        "block": block,
+        "energy": energy,
+        "max_energy": max_energy,
+        "gold": gold,
         "powers": powers,
         "potions": potions,
         "relics": relics,
-        "deck_size": p.get("deck_size") or 0,
+        "deck_size": max(0, p.get("deck_size") or 0),
         "orbs": orbs,
         "orb_slots": orb_slots,
         "osty": osty,
@@ -878,14 +888,16 @@ def extract_pile_counts(state: dict) -> dict:
     available and fall back to the old approximation (deck_size - draw -
     discard - hand) for older engine versions that omit it.
     """
-    draw = state.get("draw_pile_count", 0)
-    discard = state.get("discard_pile_count", 0)
+    draw = max(0, state.get("draw_pile_count", 0) or 0)
+    discard = max(0, state.get("discard_pile_count", 0) or 0)
     # Prefer real exhaust count from engine; fall back to approximation
     exhaust = state.get("exhaust_pile_count")
     if exhaust is None:
         hand_count = len(state.get("hand", []))
         deck_size = state.get("player", {}).get("deck_size", 0)
         exhaust = max(0, deck_size - draw - discard - hand_count)
+    else:
+        exhaust = max(0, exhaust)
     return {
         "draw": draw,
         "discard": discard,
@@ -1162,6 +1174,18 @@ class GameController:
     async def skip_card_reward(self) -> dict:
         """Skip the card reward."""
         return await self._call(self.bridge.skip_card_reward())
+
+    async def collect_potion_reward(self, potion_index: int) -> dict:
+        """Collect a potion from the reward screen."""
+        return await self._call(self.bridge.collect_potion_reward(potion_index))
+
+    async def skip_potion_reward(self, potion_index: int | None = None) -> dict:
+        """Skip one or all pending potion rewards."""
+        return await self._call(self.bridge.skip_potion_reward(potion_index))
+
+    async def discard_potion_for_reward(self, discard_index: int, potion_index: int) -> dict:
+        """Discard a belt potion and collect a reward potion."""
+        return await self._call(self.bridge.discard_potion_for_reward(discard_index, potion_index))
 
     async def use_potion(self, index: int, target_index: int | None = None) -> dict:
         """Use a potion from the potion belt."""
