@@ -618,6 +618,13 @@ class CardWidget(Static):
         else:
             t.append(f"({cost_str}) ", style="bold yellow")
         color = CARD_TYPE_COLORS.get(c.get("type", ""), "white")
+        # Card type indicator for accessibility: [A]ttack, [S]kill, [P]ower, etc.
+        ctype = c.get("type", "")
+        _TYPE_LABELS = {"Attack": "A", "Skill": "S", "Power": "P", "Status": "St", "Curse": "C"}
+        type_label = _TYPE_LABELS.get(ctype)
+        if type_label:
+            t.append(f"[{type_label}]", style=f"dim {color}")
+            t.append(" ", style="dim")
         name = _name_str(c.get("name"))
         # Show "+" suffix for upgraded cards so players can distinguish them
         if c.get("upgraded"):
@@ -1155,9 +1162,11 @@ class CombatScreen(Screen):
     def _enemy_widgets(self) -> list[EnemyWidget]:
         enemies = extract_enemies(self.state)
         living = [e for e in enemies if not e.get("is_dead")]
+        # Skip targeting indicator when there's only 1 enemy (auto-selected)
+        show_target = len(living) > 1
         widgets = []
         for i, e in enumerate(living):
-            widgets.append(EnemyWidget(e, i, is_targeted=(i == self.selected_target)))
+            widgets.append(EnemyWidget(e, i, is_targeted=(show_target and i == self.selected_target)))
         return widgets
 
     async def _refresh_display(self) -> None:
@@ -1341,10 +1350,13 @@ class CombatScreen(Screen):
             return
         # Reset stuck counter on meaningful action
         self._stuck_count = 0
+        hand = extract_hand(self.state)
+        if not hand:
+            self.notify("Hand empty \u2014 press E to end turn", severity="warning")
+            return
         if self.selected_card < 0:
             self.notify("No card selected! Press [1-9]", severity="warning")
             return
-        hand = extract_hand(self.state)
         if self.selected_card >= len(hand):
             self.notify("Invalid card selection", severity="error")
             return

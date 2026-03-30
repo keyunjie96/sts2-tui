@@ -626,7 +626,10 @@ class MapScreen(Screen):
         bindings = Text()
         if choices:
             max_idx = min(len(choices), 9)
-            bindings.append(f"[1-{max_idx}]", style="bold yellow")
+            if max_idx == 1:
+                bindings.append("[1]", style="bold yellow")
+            else:
+                bindings.append(f"[1-{max_idx}]", style="bold yellow")
             bindings.append(f" {L('select_path')}  ", style="dim")
         bindings.append("[Q]", style="bold yellow")
         bindings.append(f" {L('quit')}", style="dim")

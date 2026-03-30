@@ -433,7 +433,7 @@ class EngineBridge:
         except asyncio.TimeoutError:
             raise BridgeError(
                 f"sts2-cli: no response within {timeout}s (engine likely stuck). "
-                "Try pressing Esc to leave combat."
+                "Try pressing Esc to go back."
             )
 
     def _read_json_line_sync(self) -> dict[str, Any]:
@@ -471,7 +471,12 @@ class EngineBridge:
                 )
             line = raw.strip()
             if line.startswith("{"):
-                resp = json.loads(line)
+                try:
+                    resp = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise BridgeError(
+                        f"sts2-cli: invalid JSON on stdout: {exc}  line: {line[:200]}"
+                    ) from exc
                 log.debug("bridge < type=%s decision=%s", resp.get("type"), resp.get("decision"))
                 return resp
             # Skip build warnings, .NET banner lines, etc.

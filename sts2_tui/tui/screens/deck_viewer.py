@@ -78,7 +78,7 @@ def _format_deck_card(card: dict) -> Text:
     # Cost (with star_cost for Regent cards)
     cost_str = str(cost) if cost >= 0 else "X"
     if star_cost is not None:
-        if cost >= 0:
+        if cost > 0:
             t.append(f"  ({cost_str}+\u2605{star_cost}) ", style="bold bright_yellow")
         else:
             t.append(f"  (\u2605{star_cost}) ", style="bold bright_yellow")

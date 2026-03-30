@@ -571,7 +571,7 @@ class _ShopItem:
         "description",
         "cost",          # price in gold
         "card_type",     # only for cards: "Attack", "Skill", "Power", etc.
-        "card_cost",     # only for cards: energy cost
+        "card_cost",     # only for cards: energy cost (int)
         "card_rarity",   # only for cards: "Common", "Uncommon", "Rare"
         "on_sale",       # only for cards: discount flag
         "is_stocked",    # whether the item is still available
@@ -590,7 +590,7 @@ class _ShopItem:
         cost: int,
         *,
         card_type: str = "",
-        card_cost: int | str = "",
+        card_cost: int = 0,
         card_rarity: str = "",
         on_sale: bool = False,
         is_stocked: bool = True,
@@ -659,7 +659,7 @@ def _build_shop_items(state: dict) -> list[_ShopItem]:
         if after_upgrade:
             up_stats = after_upgrade.get("stats") or {}
             up_desc_raw = after_upgrade.get("description", "")
-            up_cost = after_upgrade.get("cost", card.get("card_cost", "?"))
+            up_cost = after_upgrade.get("cost", card.get("card_cost", 0))
             shop_after_upgrade = {
                 "cost": up_cost,
                 "stats": _expand_vars(up_stats) if up_stats else {},
@@ -674,7 +674,7 @@ def _build_shop_items(state: dict) -> list[_ShopItem]:
             description=_clean_description(card.get("description", ""), engine_stats),
             cost=card.get("cost", 0),
             card_type=card.get("type", ""),
-            card_cost=card.get("card_cost", "?"),
+            card_cost=card.get("card_cost") if isinstance(card.get("card_cost"), int) else 0,
             card_rarity=engine_rarity,
             on_sale=card.get("on_sale", False),
             is_stocked=True,
@@ -873,7 +873,7 @@ class ShopScreen(Screen):
         t.append(f"{item.name}", style=f"bold {name_color}" if affordable else f"dim {name_color}")
         # Energy cost (with star cost for Regent cards), card type, and rarity
         if item.star_cost is not None:
-            if item.card_cost and item.card_cost not in ("", "X", 0, "0"):
+            if item.card_cost > 0:
                 t.append(f"  ({item.card_cost}+\u2605{item.star_cost})", style="bold yellow" if affordable else "dim yellow")
             else:
                 t.append(f"  (\u2605{item.star_cost})", style="bold yellow" if affordable else "dim yellow")

@@ -66,6 +66,10 @@ class RewardCardWidget(Static):
             )
             type_text.append(" | ", style="dim")
             type_text.append(rarity_label, style=f"bold {rarity_color}")
+        # Show card ID suffix to disambiguate duplicates with the same name
+        card_id = c.get("id", "")
+        if card_id:
+            type_text.append(f" ({card_id})", style="dim")
         yield Static(type_text, classes="reward-card-type")
 
         cost = c.get("cost", 0)

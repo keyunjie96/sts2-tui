@@ -102,6 +102,28 @@ class EventScreen(Screen):
         self._is_composed = False
         self._busy = False
         self._refreshing = False
+        self._can_leave = self._check_can_leave()
+
+    def _check_can_leave(self) -> bool:
+        """Determine whether the player can leave this event via Esc.
+
+        Returns True when the state explicitly allows leaving or when one
+        of the options looks like a "leave" choice.  Returns False for
+        mandatory events (e.g. Neow) where the player must pick.
+        """
+        # Explicit engine flag takes priority
+        if "can_leave" in self.state:
+            return bool(self.state["can_leave"])
+        # Heuristic: check if any option title contains "leave" (case-insensitive)
+        for opt in self.options:
+            title = _name_str(opt.get("title")) or ""
+            if "leave" in title.lower():
+                return True
+        # No options at all -> allow leaving to avoid softlock
+        if not self.options:
+            return True
+        # Default: mandatory event (no leave option found)
+        return False
 
     def compose(self) -> ComposeResult:
         with Vertical(id="event-screen"):
@@ -147,8 +169,9 @@ class EventScreen(Screen):
             bindings.append(f" {L('select')}  ", style="dim")
             bindings.append("[Enter]", style="bold yellow")
             bindings.append(f" {L('confirm')}  ", style="dim")
-        bindings.append("[Esc]", style="bold yellow")
-        bindings.append(f" {L('leave')}", style="dim")
+        if self._can_leave:
+            bindings.append("[Esc]", style="bold yellow")
+            bindings.append(f" {L('leave')}", style="dim")
         return build_status_footer(bindings, self.state)
 
     async def _refresh_display(self) -> None:
@@ -228,6 +251,9 @@ class EventScreen(Screen):
 
     async def action_leave(self) -> None:
         if self._busy:
+            return
+        if not self._can_leave:
+            self.notify("You must choose an option.", severity="warning")
             return
         self._busy = True
         try:
