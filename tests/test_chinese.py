@@ -11,23 +11,16 @@ Verifies that:
 
 from __future__ import annotations
 
-import asyncio
-import json
-import re
-import unicodedata
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from sts2_tui.bridge import BridgeError, EngineBridge
 from sts2_tui.tui.controller import (
-    GameController,
     _name_str,
     extract_enemies,
     extract_hand,
     extract_player,
-    extract_reward_cards,
 )
 from sts2_tui.tui.i18n import LABELS, L, get_label, get_language, set_language
 

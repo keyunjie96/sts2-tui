@@ -19,7 +19,7 @@ from rich.text import Text
 
 from sts2_tui.tui.controller import GameController, _name_str, resolve_card_description, extract_reward_cards
 from sts2_tui.tui.i18n import L
-from sts2_tui.tui.shared import CARD_TYPE_COLORS, RARITY_COLORS, build_status_footer, build_upgrade_preview
+from sts2_tui.tui.shared import CARD_TYPE_COLORS, KEYWORD_ICONS, RARITY_COLORS, build_status_footer, build_upgrade_preview
 
 log = logging.getLogger(__name__)
 
@@ -53,8 +53,7 @@ class RewardCardWidget(Static):
         # Show keyword icons
         for kw in c.get("keywords") or []:
             if isinstance(kw, str):
-                kw_icons = {"Exhaust": "\u2716", "Ethereal": "\u2728", "Innate": "\u2605", "Retain": "\u21ba", "Sly": "\u2694"}
-                icon = kw_icons.get(kw.title(), "")
+                icon = KEYWORD_ICONS.get(kw.title(), "")
                 if icon:
                     name_text.append(f" {icon}", style="bold red" if kw.title() == "Exhaust" else "bold cyan")
         yield Static(name_text, classes="reward-card-name")
@@ -127,7 +126,7 @@ def _resolve_potion_reward_description(potion: dict) -> str:
         if resolved:
             return resolved
     except Exception:
-        pass
+        log.debug("Failed to enrich potion description via shop resolver", exc_info=True)
     # Fallback: try resolve_card_description with engine-sent vars
     raw_desc = potion.get("description", "")
     if not raw_desc:

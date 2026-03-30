@@ -8,7 +8,6 @@ Tests:
 """
 
 import asyncio
-import json
 import sys
 import traceback
 
@@ -259,7 +258,7 @@ async def play_character(character: str, seed: str, verbose: bool = True) -> dic
         for e in errors[:5]:
             print(f"    {e}")
     else:
-        print(f"  Errors: 0")
+        print("  Errors: 0")
 
     return {
         "character": character,

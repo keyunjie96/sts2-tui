@@ -19,7 +19,7 @@ from rich.text import Text
 
 from sts2_tui.tui.controller import GameController, _name_str, resolve_card_description
 from sts2_tui.tui.i18n import L
-from sts2_tui.tui.shared import CARD_TYPE_COLORS, RARITY_COLORS, build_status_footer, build_upgrade_preview
+from sts2_tui.tui.shared import CARD_TYPE_COLORS, KEYWORD_ICONS, RARITY_COLORS, build_status_footer, build_upgrade_preview
 
 log = logging.getLogger(__name__)
 
@@ -135,12 +135,14 @@ class GenericScreen(Screen):
             # Show keyword icons
             for kw in opt.get("keywords") or []:
                 if isinstance(kw, str):
-                    kw_icons = {"Exhaust": "\u2716", "Ethereal": "\u2728", "Innate": "\u2605", "Retain": "\u21ba", "Sly": "\u2694"}
-                    icon = kw_icons.get(kw.title(), "")
+                    icon = KEYWORD_ICONS.get(kw.title(), "")
                     if icon:
                         t.append(f" {icon}", style="bold red" if kw.title() == "Exhaust" else "bold cyan")
             if cost is not None:
                 t.append(f" ({cost})", style="yellow")
+            star_cost = opt.get("star_cost")
+            if star_cost is not None:
+                t.append(f"+\u2605{star_cost}", style="bold bright_yellow")
             if card_type:
                 t.append(f" [{card_type}]", style="dim cyan")
             # Show rarity for card_select (consistent with card_reward and shop)
@@ -207,10 +209,6 @@ class GenericScreen(Screen):
                 elif decision == "card_select":
                     state = await self.controller.select_cards(
                         str(opt.get("index", self.selected)),
-                    )
-                elif decision == "shop":
-                    state = await self.controller.choose(
-                        opt.get("index", self.selected),
                     )
                 else:
                     state = await self.controller.choose(

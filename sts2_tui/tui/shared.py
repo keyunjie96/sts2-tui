@@ -47,6 +47,23 @@ RARITY_COLORS: dict[str, tuple[str, str]] = {
 }
 
 
+# Keyword icons -- used across combat, card_reward, shop, generic
+KEYWORD_ICONS: dict[str, str] = {
+    "Exhaust": "\u2716",
+    "Ethereal": "\u2728",
+    "Innate": "\u2605",
+    "Retain": "\u21ba",
+    "Sly": "\u2694",
+}
+
+# Room type colors for combat TopBar
+ROOM_TYPE_COLORS: dict[str, str] = {
+    "Boss": "bold red",
+    "Elite": "bold bright_magenta",
+    "Monster": "dim white",
+}
+
+
 # ---------------------------------------------------------------------------
 # HP color helper
 # ---------------------------------------------------------------------------

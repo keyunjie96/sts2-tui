@@ -490,10 +490,7 @@ def parse_response(response: dict[str, Any]) -> dict[str, Any]:
     elif decision in ("event_choice", "rest_site"):
         result["options"] = response.get("options") or []
 
-    elif decision == "card_reward":
-        result["cards"] = [parse_card(c) for c in (response.get("cards") or [])]
-
-    elif decision == "card_select":
+    elif decision in ("card_reward", "card_select"):
         result["cards"] = [parse_card(c) for c in (response.get("cards") or [])]
 
     elif decision == "game_over":

@@ -7,14 +7,12 @@ render correctly and respond to keyboard input without crashing.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from textual.app import App, ComposeResult
-from textual.widgets import Static
+from textual.app import App
 
 # ---------------------------------------------------------------------------
 # Fixture: load real sts2-cli responses from seed_1_raw.json

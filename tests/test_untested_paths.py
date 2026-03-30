@@ -85,7 +85,6 @@ from sts2_tui.tui.controller import (
     extract_hand,
     extract_reward_cards,
     _detect_x_cost,
-    _enrich_card_stats,
     _error_dict,
     GameController,
 )

@@ -29,7 +29,6 @@ from sts2_tui.bridge import EngineBridge, BridgeError
 from sts2_tui.tui.controller import (
     resolve_card_description,
     extract_hand,
-    extract_reward_cards,
     extract_enemies,
     extract_player,
     extract_pile_counts,
@@ -629,10 +628,10 @@ async def test_card_select_triggers(results: list[TestResult]):
     plain = options_text.plain
     result.check("card_select options have resolved descriptions",
                  "6" in plain and "5" in plain,
-                 f"text includes damage/block values")
+                 "text includes damage/block values")
     result.check("card_select options do NOT have unresolved templates",
                  "{Damage" not in plain and "{Block" not in plain,
-                 f"options text clean of templates")
+                 "options text clean of templates")
 
     results.append(result)
 
@@ -924,7 +923,7 @@ async def test_card_generating_cards(results: list[TestResult]):
                 name = card.get("name", "")
                 if "Shiv" in name:
                     shiv_seen = True
-                    result.check(f"Shiv card has cost=0",
+                    result.check("Shiv card has cost=0",
                                  card["cost"] == 0,
                                  f"cost={card['cost']}")
                     result.check("Shiv card is playable",

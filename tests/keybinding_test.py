@@ -18,7 +18,6 @@ and exercise bindings end-to-end.
 
 from __future__ import annotations
 
-import asyncio
 import copy
 import logging
 import re
@@ -1289,7 +1288,7 @@ def test_keybinding_summary_report():
             for issue in issues:
                 report_lines.append(issue)
         else:
-            report_lines.append(f"    Status: ALL BINDINGS VERIFIED OK")
+            report_lines.append("    Status: ALL BINDINGS VERIFIED OK")
 
         report_lines.append("")
 
@@ -1297,8 +1296,8 @@ def test_keybinding_summary_report():
     report_lines.append("  SlsApp (Global)")
     report_lines.append(f"  {'─' * 40}")
     global_bindings = getattr(SlsApp, "BINDINGS", [])
-    report_lines.append(f"    Bindings: q (quit), d (deck), r (relics), ? (help), F1 (help)")
-    report_lines.append(f"    Status: ALL VERIFIED OK")
+    report_lines.append("    Bindings: q (quit), d (deck), r (relics), ? (help), F1 (help)")
+    report_lines.append("    Status: ALL VERIFIED OK")
     report_lines.append("")
 
     # Overlay bindings
@@ -1311,7 +1310,7 @@ def test_keybinding_summary_report():
         report_lines.append(f"  {'─' * 40}")
         bindings = getattr(overlay_cls, "BINDINGS", [])
         report_lines.append(f"    Textual bindings: {len(bindings)}")
-        report_lines.append(f"    Status: ALL VERIFIED OK")
+        report_lines.append("    Status: ALL VERIFIED OK")
         report_lines.append("")
 
     # Discrepancies

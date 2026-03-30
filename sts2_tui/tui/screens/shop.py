@@ -21,7 +21,7 @@ from rich.text import Text
 
 from sts2_tui.tui.controller import GameController, _name_str
 from sts2_tui.tui.i18n import L
-from sts2_tui.tui.shared import CARD_TYPE_COLORS, RARITY_COLORS, build_status_footer, build_upgrade_preview, hp_color
+from sts2_tui.tui.shared import CARD_TYPE_COLORS, KEYWORD_ICONS, RARITY_COLORS, build_status_footer, build_upgrade_preview, hp_color
 
 log = logging.getLogger(__name__)
 
@@ -575,6 +575,7 @@ class _ShopItem:
         "after_upgrade", # only for cards: upgrade preview data
         "keywords",      # only for cards: keyword tags (Exhaust, Ethereal, etc.)
         "card_stats",    # only for cards: resolved stats dict for upgrade preview
+        "star_cost",     # only for cards: Regent star cost
     )
 
     def __init__(
@@ -593,6 +594,7 @@ class _ShopItem:
         after_upgrade: dict | None = None,
         keywords: list | None = None,
         card_stats: dict | None = None,
+        star_cost: int | None = None,
     ) -> None:
         self.kind = kind
         self.index = index
@@ -607,6 +609,7 @@ class _ShopItem:
         self.after_upgrade = after_upgrade
         self.keywords = keywords or []
         self.card_stats = card_stats or {}
+        self.star_cost = star_cost
 
 
 def _build_shop_items(state: dict) -> list[_ShopItem]:
@@ -675,6 +678,7 @@ def _build_shop_items(state: dict) -> list[_ShopItem]:
             after_upgrade=shop_after_upgrade,
             keywords=card.get("keywords") or [],
             card_stats=engine_stats or {},
+            star_cost=card.get("star_cost"),
         ))
 
     # Relics
@@ -864,8 +868,14 @@ class ShopScreen(Screen):
         # Card name with type color
         name_color = _CARD_TYPE_COLORS.get(item.card_type, "white")
         t.append(f"{item.name}", style=f"bold {name_color}" if affordable else f"dim {name_color}")
-        # Energy cost, card type, and rarity
-        t.append(f"  ({item.card_cost})", style="bold yellow" if affordable else "dim yellow")
+        # Energy cost (with star cost for Regent cards), card type, and rarity
+        if item.star_cost is not None:
+            if item.card_cost and item.card_cost not in ("", "X", 0, "0"):
+                t.append(f"  ({item.card_cost}+\u2605{item.star_cost})", style="bold yellow" if affordable else "dim yellow")
+            else:
+                t.append(f"  (\u2605{item.star_cost})", style="bold yellow" if affordable else "dim yellow")
+        else:
+            t.append(f"  ({item.card_cost})", style="bold yellow" if affordable else "dim yellow")
         t.append(f"  {item.card_type}", style="dim")
         if item.card_rarity:
             rarity_label, rarity_color = _RARITY_COLORS.get(
@@ -879,16 +889,9 @@ class ShopScreen(Screen):
         if item.on_sale:
             t.append(f"  {L('sale')}", style="bold yellow")
         # Keyword tags (Exhaust, Ethereal, etc.)
-        _KW_ICONS: dict[str, str] = {
-            "Exhaust": "\u2716",
-            "Ethereal": "\u2728",
-            "Innate": "\u2605",
-            "Retain": "\u21ba",
-            "Sly": "\u2694",
-        }
         for kw in (item.keywords or []):
             if isinstance(kw, str):
-                icon = _KW_ICONS.get(kw.title(), "")
+                icon = KEYWORD_ICONS.get(kw.title(), "")
                 if icon:
                     t.append(f" {icon}{kw}", style="dim magenta")
                 else:

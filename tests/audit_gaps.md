@@ -8,7 +8,7 @@ Audit data sources: `tests/audit_data/` files `*_90001` through `*_90005`
 
 Legend:
 - [x] = engine sends it AND the TUI displays/uses it
-- [ ] = engine sends it but the TUI does NOT display or use it (GAP — none remaining as of Round 3)
+- [ ] = engine sends it but the TUI does NOT display or use it (all Round 5 gaps now fixed)
 - [~] = partially handled (displayed in some contexts but not others, or approximated)
 
 ---
@@ -171,7 +171,7 @@ Legend:
 - [x] cost — gold price shown
 - [x] is_stocked — used to filter out sold items
 - [x] on_sale — shown as "SALE!" badge
-- [x] star_cost — engine-side gap: engine does NOT send star_cost for shop cards; TUI cannot display what isn't sent
+- [x] star_cost — FIXED in engine 110k and TUI Round 5: engine sends star_cost for Regent shop cards; TUI now extracts it into _ShopItem and displays it in _render_card_line() with star icon
 
 ### Shop relic fields (per relic in `relics[]`)
 - [x] index — used for buy command
@@ -191,7 +191,7 @@ Legend:
 - [x] **rarity in shop** — FIXED in engine 100k: engine now sends rarity for shop cards. TUI game_data lookup remains as fallback but is no longer needed for rarity.
 - [x] **upgrade preview now shown in shop** — shop card lines display upgrade preview below description, consistent with card_reward and deck_viewer
 - [x] **keywords now shown in shop** — shop card lines display keyword tags (Exhaust, Ethereal, etc.) when the engine sends them
-- [x] **star_cost in shop** — engine-side gap: engine does not send star_cost for shop cards; duplicate of star_cost item above
+- [x] **star_cost in shop** — FIXED in engine 110k and TUI Round 5: _ShopItem now has star_cost slot, _build_shop_items() extracts it, _render_card_line() displays it with star icon (★)
 
 ---
 
@@ -354,7 +354,8 @@ Legend:
 ### Star cost consistency
 - [x] **star_cost now shown in card_reward** — FIXED in sts2-cli. Engine now sends star_cost for card_reward cards (confirmed present in 90004, absent in 80004). RewardCardWidget correctly renders it with star icons.
 - [x] **star_cost shown in combat** — CardWidget correctly shows star_cost in card header for Regent cards.
-- [x] **star_cost in shop** — engine-side gap: engine does not send star_cost for shop cards; duplicate entry
+- [x] **star_cost in shop** — FIXED in engine 110k and TUI Round 5: _ShopItem.star_cost slot added, extracted in _build_shop_items(), displayed in _render_card_line() with ★ icon
+- [x] **star_cost in card_select** — FIXED in engine 110k and TUI Round 5: GenericScreen._options_text() now reads star_cost and displays it with ★ icon after energy cost
 
 ### Rarity consistency
 - [x] **rarity shown in card_reward and now reliably in shop** — card_reward always gets rarity from engine. As of 100k data, the engine now also sends rarity for shop cards (was absent in 90k). Shop screen consumes it at line 624. The game_data fallback remains as a safety net but is no longer needed for rarity.
@@ -429,3 +430,33 @@ Legend:
 ### Consistency notes
 - [x] **keywords in card_select** — Already handled: GenericScreen displays keyword icons (generic.py lines 136-141) when the engine sends them. The engine may not consistently send keywords for card_select; when absent, no icons are shown. No TUI-side fix needed.
 - [x] **rarity display inconsistency across screens** — FIXED: GenericScreen (card_select) now displays rarity. Combat hand passes rarity through `extract_hand()` but does not display it in CardWidget (rarity is not useful during active combat). Rarity is now shown on card_reward, shop, and card_select screens.
+
+---
+
+## Summary of changes from previous audit (100xxx -> 110xxx data)
+
+### New engine fields confirmed in 110k data (absent in 100k data)
+
+#### shop cards: star_cost now sent by engine
+- [x] **star_cost now sent for shop cards** — FIXED in TUI Round 5: `_ShopItem` now has `star_cost` slot, `_build_shop_items()` extracts `card.get("star_cost")`, and `_render_card_line()` displays it with ★ icon (e.g., "(1+★7)" or "(★7)"), matching the card_reward pattern.
+
+#### card_select cards: star_cost now sent by engine
+- [x] **star_cost now sent for card_select cards** — FIXED in TUI Round 5: `GenericScreen._options_text()` now reads `opt.get("star_cost")` and appends `+★{star_cost}` after the energy cost, using bold bright_yellow styling.
+
+### Removed engine fields in 110k data
+
+#### card_reward: from_event field removed
+- [x] **from_event field removed** — Engine no longer sends `from_event` on card_reward decisions (was present in Necrobinder_100005; absent in all 110k data). The TUI never consumed this field (previously documented as informational/by-design), so no TUI impact.
+
+### LegSweep crash pattern (Silent seed 110002)
+- [x] **Silent 110002 is clean** — No Leg Sweep cards encountered in the Silent 110002 combat data. No crashes or anomalies detected. The engine-side LegSweep bug (documented in Round 4 from seed 100002) was not triggered in this seed.
+
+### Engine version
+- [x] **Engine version 0.2.0** — All 110k data files report version `0.2.0`, same as 100k data. The star_cost additions to shop and card_select are new within the same engine version.
+
+### Data consistency notes
+- [x] **New enemy names** — 110k data includes enemies not seen in 100k: Brute Raider, Axe Raider, Mawler, Snapping Jaxfruit, Assassin Raider, Tracker Raider, Crossbow Raider. All use standard enemy field schemas (index, name, hp, max_hp, block, intents, intends_attack, powers); no new fields.
+- [x] **New event names** — 110k data includes events not seen in 100k: The Legends Were True, Whispering Hollow, Byrdonis Nest, Wood Carvings, Room Full of Cheese, This or That?. All use standard event_choice field schemas; no new fields.
+- [x] **Innate keyword first appearance in card_reward** — Backstab (Silent) appears in card_reward with `keywords=["Exhaust", "Innate"]`. The Innate keyword was not encountered in previous data but is already handled by all screens (combat.py, card_reward.py, shop.py, generic.py all have Innate in their keyword icon maps).
+- [x] **No new decision types** — 110k data contains the same 8 decision types as 100k: combat_play, card_reward, card_select, event_choice, map_select, rest_site, shop, game_over. No bundle_select encountered in these seeds.
+- [x] **All sub-field schemas unchanged** — Hand cards, enemies, intents, powers, player data, context, options, map nodes all have identical field schemas between 100k and 110k. The only structural changes are the two star_cost additions above and the from_event removal.

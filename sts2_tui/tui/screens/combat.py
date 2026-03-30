@@ -30,7 +30,7 @@ from sts2_tui.tui.controller import (
 )
 from sts2_tui.tui.i18n import L
 from sts2_tui.tui.screens.potion_menu import PotionMenuOverlay, PotionUseRequest, PotionDiscardRequest
-from sts2_tui.tui.shared import CARD_TYPE_COLORS, GlobalHelpOverlay, hp_color
+from sts2_tui.tui.shared import CARD_TYPE_COLORS, KEYWORD_ICONS, ROOM_TYPE_COLORS, GlobalHelpOverlay, hp_color
 
 log = logging.getLogger(__name__)
 
@@ -91,8 +91,7 @@ class TopBar(Static):
         t.append(f" {L('act')} {act}", style="bold white")
         t.append(f"  {L('floor')} {floor}", style="dim white")
         if room_type:
-            room_colors = {"Boss": "bold red", "Elite": "bold bright_magenta", "Monster": "dim white"}
-            t.append(f"  [{room_type}]", style=room_colors.get(room_type, "dim"))
+            t.append(f"  [{room_type}]", style=ROOM_TYPE_COLORS.get(room_type, "dim"))
         t.append("  ", style="dim")
         t.append(f"{L('turn')} {turn}", style="bold bright_cyan")
         t.append("  |  ", style="dim")
@@ -593,18 +592,10 @@ class CardWidget(Static):
             t.append(f" ({L('unplayable')})", style="dim red")
         # Show keyword tags on the header line for quick visibility
         kws = c.get("keywords") or []
-        _KW_STYLES: dict[str, tuple[str, str]] = {
-            "Exhaust": ("\u2716", "bold red"),         # X mark
-            "Ethereal": ("\u2728", "bold cyan"),       # sparkles
-            "Innate": ("\u2605", "bold yellow"),       # star
-            "Retain": ("\u21ba", "bold green"),         # loop arrow
-            "Unplayable": ("\u2718", "dim red"),       # heavy X mark
-            "Sly": ("\u2694", "bold bright_magenta"),  # crossed swords (Silent mechanic)
-        }
         for kw in kws:
             if isinstance(kw, str):
-                # Case-insensitive lookup
-                icon, style = _KW_STYLES.get(kw.title(), ("", "dim magenta"))
+                icon = KEYWORD_ICONS.get(kw.title(), "")
+                style = "bold red" if kw.title() == "Exhaust" else "bold cyan"
                 if icon:
                     t.append(f" {icon}", style=style)
                 else:

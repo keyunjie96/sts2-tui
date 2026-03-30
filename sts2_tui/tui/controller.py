@@ -38,6 +38,22 @@ def _name_str(name_obj: Any) -> str:
     return str(name_obj)
 
 
+_STAT_KEY_LABELS: dict[str, str] = {
+    "damage": "Damage",
+    "block": "Block",
+    "hploss": "HP Loss",
+    "maxhp": "Max HP",
+    "energy": "Energy",
+    "cards": "Cards",
+    "heal": "Heal",
+    "magic": "Magic",
+    "strength": "Strength",
+    "dexterity": "Dexterity",
+    "parry": "Block",
+    "strengthloss": "Strength Loss",
+}
+
+
 def humanize_stat_key(key: str) -> str:
     """Convert an engine stat key like 'juggernautpower' into a human-readable label.
 
@@ -47,22 +63,8 @@ def humanize_stat_key(key: str) -> str:
     - Keys like 'hploss' -> 'HP Loss', 'maxhp' -> 'Max HP'.
     - Otherwise, split on underscores and title-case.
     """
-    _KNOWN_KEYS: dict[str, str] = {
-        "damage": "Damage",
-        "block": "Block",
-        "hploss": "HP Loss",
-        "maxhp": "Max HP",
-        "energy": "Energy",
-        "cards": "Cards",
-        "heal": "Heal",
-        "magic": "Magic",
-        "strength": "Strength",
-        "dexterity": "Dexterity",
-        "parry": "Block",
-        "strengthloss": "Strength Loss",
-    }
     lower = key.lower()
-    known = _KNOWN_KEYS.get(lower)
+    known = _STAT_KEY_LABELS.get(lower)
     if known:
         return known
     # Strip 'power' suffix for buff/debuff stat keys

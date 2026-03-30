@@ -1464,7 +1464,7 @@ async def main() -> None:
     print(f"  DONE: {len(all_paths)} screenshots saved to {SCREENSHOT_DIR}")
     print(f"{'=' * 60}")
     print(f"\n  Open {index_path} in a browser to review all screenshots.")
-    print(f"  Or open any individual .svg file directly.\n")
+    print("  Or open any individual .svg file directly.\n")
 
     # Optional: open in browser
     if "--open" in sys.argv:

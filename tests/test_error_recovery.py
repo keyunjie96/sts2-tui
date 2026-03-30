@@ -13,14 +13,12 @@ Usage:
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from textual.app import App, ComposeResult
-from textual.widgets import Static
+from textual.app import App
 
 from sts2_tui.tui.shared import (
     ErrorRecoveryScreen,

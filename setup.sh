@@ -46,7 +46,7 @@ cd "$REPO_DIR"
 # ── Step 3: Install sts2-tui ──
 
 echo "Installing sts2-tui..."
-pip install -e .
+pip3 install -e .
 
 echo ""
 echo "=== Ready! ==="
