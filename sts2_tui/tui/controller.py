@@ -28,6 +28,9 @@ def _name_str(name_obj: Any) -> str:
     When the engine sends bilingual dicts like ``{"en": "Strike", "zh": "打击"}``,
     this returns the value for the current language setting, falling back to
     English then Chinese.
+
+    Also handles raw localization keys like ``"KAISER_CRAB.name"`` by stripping
+    the ``.name`` suffix and converting ``UPPER_SNAKE`` to title case.
     """
     if name_obj is None:
         return "?"
@@ -35,7 +38,13 @@ def _name_str(name_obj: Any) -> str:
         from sts2_tui.tui.i18n import get_language
         lang = get_language()
         return name_obj.get(lang) or name_obj.get("en") or name_obj.get("zh") or str(name_obj)
-    return str(name_obj)
+    s = str(name_obj)
+    # Detect unresolved localization keys like "KAISER_CRAB.name"
+    if s.endswith(".name") and s[0].isupper():
+        key = s[: -len(".name")]
+        # Convert UPPER_SNAKE_CASE to Title Case (e.g. "KAISER_CRAB" -> "Kaiser Crab")
+        return key.replace("_", " ").title()
+    return s
 
 
 _STAT_KEY_LABELS: dict[str, str] = {
@@ -142,6 +151,47 @@ def resolve_card_description(description: str, stats: dict[str, Any] | None) -> 
             return m.group(0)
 
         val = lower_stats.get(var)
+
+        # Handle conditional pattern: {Var:cond:>0?text|} or {Var:cond:>N?text|}
+        # SmartFormat syntax: if Var matches the condition, show the true branch;
+        # otherwise show the false branch (after the pipe).
+        if len(parts) >= 3 and parts[1] == "cond":
+            cond_str = ":".join(parts[2:])  # rejoin in case text contains colons
+            # Parse condition like ">0?text|fallback" or ">0? text|"
+            cond_match = re.match(r"([><=!]+)(\d+)\?(.*)$", cond_str, re.DOTALL)
+            if cond_match:
+                op = cond_match.group(1)
+                threshold = int(cond_match.group(2))
+                branches = cond_match.group(3)
+                # Split on last unescaped pipe for true|false branches
+                pipe_idx = branches.rfind("|")
+                if pipe_idx >= 0:
+                    true_branch = branches[:pipe_idx]
+                    false_branch = branches[pipe_idx + 1:]
+                else:
+                    true_branch = branches
+                    false_branch = ""
+                if val is not None:
+                    try:
+                        num_val = int(val)
+                    except (ValueError, TypeError):
+                        num_val = 0
+                    satisfied = False
+                    if op == ">":
+                        satisfied = num_val > threshold
+                    elif op == ">=":
+                        satisfied = num_val >= threshold
+                    elif op == "<":
+                        satisfied = num_val < threshold
+                    elif op == "<=":
+                        satisfied = num_val <= threshold
+                    elif op == "==" or op == "=":
+                        satisfied = num_val == threshold
+                    elif op == "!=":
+                        satisfied = num_val != threshold
+                    return true_branch if satisfied else false_branch
+                # Value unknown -- default to false branch (conservative)
+                return false_branch
 
         # Handle plural pattern: {Var:plural:singular|plural}
         if len(parts) >= 3 and parts[1] == "plural":
@@ -340,6 +390,7 @@ def extract_enemies(state: dict) -> list[dict]:
         is_defend = False
         is_buff = False
         is_debuff = False
+        is_debuff_strong = False
         is_status_card = False
         is_heal = False
         is_stun = False
@@ -373,6 +424,7 @@ def extract_enemies(state: dict) -> list[dict]:
                 intent_parts.append("Debuff")
             elif itype == "DebuffStrong":
                 is_debuff = True
+                is_debuff_strong = True
                 intent_parts.append("Strong Debuff")
             elif itype == "StatusCard":
                 is_status_card = True
@@ -406,6 +458,7 @@ def extract_enemies(state: dict) -> list[dict]:
             "is_defend": is_defend,
             "is_buff": is_buff,
             "is_debuff": is_debuff,
+            "is_debuff_strong": is_debuff_strong,
             "is_status_card": is_status_card,
             "is_heal": is_heal,
             "is_stun": is_stun,

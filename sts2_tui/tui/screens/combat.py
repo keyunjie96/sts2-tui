@@ -42,6 +42,7 @@ log = logging.getLogger(__name__)
 DEBUFF_NAMES: frozenset[str] = frozenset({
     "Vulnerable", "Weak", "Frail", "Poison", "Constricted",
     "Hex", "Entangled", "Infested",
+    "Constrict", "Shrink",
 })
 
 BUFF_NAMES: frozenset[str] = frozenset({
@@ -53,6 +54,8 @@ BUFF_NAMES: frozenset[str] = frozenset({
     "Electrodynamics", "Storm", "Creative AI", "Accuracy", "Envenom",
     "Noxious Fumes", "After Image", "A Thousand Cuts", "Footwork",
     "Phantasmal Killer", "Sadistic Nature",
+    "Phantom Blades", "Serpent Form", "Nightmare",
+    "Imbalanced",
 })
 
 
@@ -172,7 +175,6 @@ class IncomingSummary(Static):
 
         total_damage = 0
         attack_parts: list[str] = []
-        has_multi_hit = False
         for e in enemies:
             if e.get("is_dead"):
                 continue
@@ -184,7 +186,6 @@ class IncomingSummary(Static):
                 if hits and hits > 1:
                     per_hit = dmg // hits
                     attack_parts.append(f"{e['name']} {per_hit}x{hits}")
-                    has_multi_hit = True
                 else:
                     attack_parts.append(f"{e['name']} {dmg}")
                 total_damage += enemy_total
@@ -300,6 +301,7 @@ class EnemyWidget(Static):
             # (flag_key, icon, label, style)
             ("is_defend", "\u26e8", "Defend", "bold cyan"),
             ("is_buff", "\u2b06", "Buff", "bold green"),
+            ("is_debuff_strong", "\u2b07\u2b07", "Strong Debuff", "bold bright_magenta"),
             ("is_debuff", "\u2b07", "Debuff", "bold magenta"),
             ("is_status_card", "\u2753", "Status", "bold white"),
             ("is_heal", "\u2764", "Heal", "bold green"),
@@ -309,13 +311,19 @@ class EnemyWidget(Static):
         ]
 
         secondary_shown = False
+        debuff_strong_shown = False
         for flag_key, icon, label, style in _SECONDARY_INTENTS:
             if e.get(flag_key):
+                # Skip plain "Debuff" when "Strong Debuff" is already shown
+                if flag_key == "is_debuff" and debuff_strong_shown:
+                    continue
                 if has_attack or secondary_shown:
                     t.append(" + ", style="dim")
                 t.append(f"{icon} ", style=style)
                 t.append(label, style=style)
                 secondary_shown = True
+                if flag_key == "is_debuff_strong":
+                    debuff_strong_shown = True
 
         if not has_attack and not secondary_shown:
             summary = e.get("intent_summary", "")
@@ -325,6 +333,9 @@ class EnemyWidget(Static):
                 t.append("???", style="dim")
 
         return t
+
+    # Powers that tick for their amount value each turn -- show amount prominently
+    _TICK_POWERS: frozenset[str] = frozenset({"Poison", "Constrict"})
 
     def _powers_text(self) -> Text:
         t = Text(justify="center")
@@ -341,10 +352,16 @@ class EnemyWidget(Static):
                 style = "green"
             else:
                 style = "cyan"
-            t.append(f"{name}", style=style)
-            if amount != 0:
-                sign = "+" if amount > 0 and name in BUFF_NAMES else ""
-                t.append(f" {sign}{amount}", style=f"bold {style}")
+            # Special display for tick-based powers (Poison, Constrict)
+            if name in self._TICK_POWERS and amount > 0:
+                t.append(f"{name}", style=f"bold {style}")
+                t.append(f" {amount}", style=f"bold {style}")
+                t.append("/turn", style=f"dim {style}")
+            else:
+                t.append(f"{name}", style=style)
+                if amount != 0:
+                    sign = "+" if amount > 0 and name in BUFF_NAMES else ""
+                    t.append(f" {sign}{amount}", style=f"bold {style}")
             if desc:
                 t.append(f" ({desc})", style=f"dim {style}")
         return t
@@ -372,6 +389,8 @@ class PlayerStats(Static):
             t.append(f"\u26e8 {block}", style="bold cyan")
             t.append(f" {L('block')}", style="dim cyan")
 
+        # Powers that tick for their amount value each turn
+        _tick_powers = EnemyWidget._TICK_POWERS
         for pw in player.get("powers", []):
             t.append("  |  ", style="dim")
             name = pw.get("name", "?")
@@ -383,10 +402,15 @@ class PlayerStats(Static):
                 style = "green"
             else:
                 style = "cyan"
-            t.append(f"{name}", style=style)
-            if amount != 0:
-                sign = "+" if amount > 0 and name in BUFF_NAMES else ""
-                t.append(f" {sign}{amount}", style=f"bold {style}")
+            if name in _tick_powers and amount > 0:
+                t.append(f"{name}", style=f"bold {style}")
+                t.append(f" {amount}", style=f"bold {style}")
+                t.append("/turn", style=f"dim {style}")
+            else:
+                t.append(f"{name}", style=style)
+                if amount != 0:
+                    sign = "+" if amount > 0 and name in BUFF_NAMES else ""
+                    t.append(f" {sign}{amount}", style=f"bold {style}")
             if desc:
                 t.append(f" ({desc})", style=f"dim {style}")
 

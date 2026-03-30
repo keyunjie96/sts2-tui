@@ -66,7 +66,20 @@ class GenericScreen(Screen):
         decision = self.state.get("decision", "unknown")
         with Vertical(id="generic-screen"):
             title = Text(justify="center")
-            title.append(f"  {decision.upper().replace('_', ' ')}  ", style="bold white on dark_blue")
+            # Show engine-provided title if available, otherwise use decision type
+            engine_title = self.state.get("title")
+            if engine_title:
+                title.append(f"  {_name_str(engine_title)}  ", style="bold white on dark_blue")
+            else:
+                title.append(f"  {decision.upper().replace('_', ' ')}  ", style="bold white on dark_blue")
+            # Show engine-provided description below the title
+            engine_desc = self.state.get("description")
+            if engine_desc:
+                title.append(f"\n {engine_desc}", style="dim white")
+            # Show select_type context if available (e.g., "Discard", "Exhaust")
+            select_type = self.state.get("select_type")
+            if select_type:
+                title.append(f"\n [{select_type}]", style="bold cyan")
             yield Static(title, id="rest-title")
 
             if self.options:

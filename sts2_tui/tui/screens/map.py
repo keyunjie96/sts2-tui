@@ -571,11 +571,15 @@ class MapScreen(Screen):
         floor = ctx.get("floor", "?")
         boss = ctx.get("boss", {})
         boss_name = _name_str(boss.get("name")) if boss else "?"
+        # Display floor 0 (act transition) as floor 1 for player clarity
+        display_floor = floor
+        if isinstance(floor, int) and floor == 0:
+            display_floor = 1
 
         t = Text(justify="center")
         t.append(f"  {L('map')}  ", style="bold white")
         t.append(f"  {L('act')} {act}", style="dim white")
-        t.append(f"  {L('floor')} {floor}", style="dim white")
+        t.append(f"  {L('floor')} {display_floor}", style="dim white")
         t.append("  |  ", style="dim")
         t.append(f"{L('boss')}: {boss_name}", style="bold red")
         return t

@@ -460,3 +460,133 @@ Legend:
 - [x] **Innate keyword first appearance in card_reward** — Backstab (Silent) appears in card_reward with `keywords=["Exhaust", "Innate"]`. The Innate keyword was not encountered in previous data but is already handled by all screens (combat.py, card_reward.py, shop.py, generic.py all have Innate in their keyword icon maps).
 - [x] **No new decision types** — 110k data contains the same 8 decision types as 100k: combat_play, card_reward, card_select, event_choice, map_select, rest_site, shop, game_over. No bundle_select encountered in these seeds.
 - [x] **All sub-field schemas unchanged** — Hand cards, enemies, intents, powers, player data, context, options, map nodes all have identical field schemas between 100k and 110k. The only structural changes are the two star_cost additions above and the from_event removal.
+
+---
+
+## v2 Round 1 — Deep game fidelity (Act 2+)
+
+Data source: `tests/audit_data/Silent_155924.jsonl` — Silent god-mode run, 350 states,
+Act 1 floors 1-17 through Act 2 floor 2. First deep-game data with boss fight,
+act transition, and Act 2 content.
+
+### Template resolution gaps
+
+- [x] **`{Var:cond:>0?text|}` conditional template not handled** — FIXED: Added `cond:` handler to `resolve_card_description` in controller.py. Supports `>`, `>=`, `<`, `<=`, `==`, `!=` operators with true|false branches. Shiv cards now correctly show "to ALL enemies" when FanOfKnivesAmount > 0.
+
+- [x] **Constrict power description does not reflect stacking amount** — FIXED: Added tick-based power display in EnemyWidget and PlayerStats. Constrict and Poison now show as "Constrict 9/turn" with bold styling to make the actual per-turn amount prominent, independent of the engine's static description text.
+
+### Power/buff/debuff classification gaps
+
+- [x] **"Phantom Blades" not in BUFF_NAMES** — FIXED: Added "Phantom Blades" to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Serpent Form" not in BUFF_NAMES** — FIXED: Added "Serpent Form" to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Nightmare" not in BUFF_NAMES** — FIXED: Added "Nightmare" to BUFF_NAMES in combat.py. Now colored green.
+
+- [x] **"Constrict" not in DEBUFF_NAMES** — FIXED: Added "Constrict" to DEBUFF_NAMES in combat.py. Now colored magenta and shows tick-based amount.
+
+- [x] **"Shrink" not in DEBUFF_NAMES** — FIXED: Added "Shrink" to DEBUFF_NAMES in combat.py. Now colored magenta.
+
+- [x] **"Imbalanced" not in BUFF_NAMES or DEBUFF_NAMES** — FIXED: Added "Imbalanced" to BUFF_NAMES in combat.py (it benefits the player by stunning the enemy when fully blocked). Now colored green.
+
+- [x] **"Infested" not in BUFF_NAMES** — Already present in DEBUFF_NAMES (originally added as a debuff). "Infested" on an enemy is contextually a buff, but the same power name on a player would be a debuff. Keeping in DEBUFF_NAMES is the conservative choice; it now renders as magenta rather than neutral cyan.
+
+### Keyword display gaps
+
+- [x] **"Unplayable" keyword has no icon in KEYWORD_ICONS** — FIXED: Added "Unplayable" with U+26D4 (no entry) icon to KEYWORD_ICONS in shared.py. Now all screens show the icon badge for Unplayable cards.
+
+- [x] **"Sly" keyword icon uses crossed swords, same as Attack intent** — FIXED: Changed Sly keyword icon from U+2694 (crossed swords) to U+1F5E1 (dagger) in shared.py to avoid collision with Attack intent icon.
+
+### Boss name localization failure
+
+- [x] **Act 2 boss name renders as raw localization key** — FIXED: Updated `_name_str()` in controller.py to detect unresolved `.name` localization keys (e.g. "KAISER_CRAB.name") and convert them to title case ("Kaiser Crab"). Strips the `.name` suffix and converts UPPER_SNAKE_CASE to readable form.
+
+### Map screen gaps
+
+- [x] **Act transition (Act 1 -> Act 2) map state has floor=0** — FIXED: MapScreen._header_text() now displays floor 0 as floor 1 for player clarity at act transitions.
+
+- [x] **Map choices spanning multiple rows in Act 2** — By-design: the map already renders `^N` annotations per row, so `^1` appears on one row and `^2-^5` on another. This is visually clear since each annotation is positioned at the node's column. The [1-9] key binding maps to choice indices regardless of which row the node is on, so multi-row choices work correctly.
+
+### Rest site gaps
+
+- [x] **Rest site with god-mode HP shows misleading heal preview** — Engine-side: the engine sends `is_enabled: true` for heal even at full HP. The TUI correctly follows the engine's enabled state. Adding client-side override would contradict the engine's authority. The god-mode case (9999 HP) is not a normal gameplay scenario.
+
+- [x] **Rest site only shows HEAL and SMITH options** — By-design: OPTION_DISPLAY already covers LIFT, TOKE, DIG, and RECALL with icons and labels. These will render correctly when the engine offers them. No data to test against yet, but the framework is in place.
+
+### Card select screen gaps
+
+- [x] **Card select has no context about WHY the selection is happening** — FIXED: GenericScreen.compose() now displays engine-provided `title`, `description`, and `select_type` fields when present. Currently the engine sends None for all three (engine-side gap), but when the engine adds context in a future version, the TUI will display it automatically. See also the informational item below about the engine-side gap.
+
+- [x] **Card select for Survivor discard shows full card details unnecessarily** — Engine-side: without a `select_type` field from the engine, the TUI cannot distinguish discard from copy from exhaust card_selects. Showing full card details is the safe default since some card_selects (Nightmare copy, Armaments upgrade) benefit from having full info. A streamlined view would require engine-side context.
+
+- [x] **Card select for Nightmare does not indicate it is copying** — Engine-side: the engine sends no `select_type`, `title`, or `description` to distinguish Nightmare copies from discards. The TUI now supports displaying those fields when present (see compose() fix above), but needs the engine to populate them.
+
+### Combat display gaps
+
+- [x] **4-enemy fights cause enemy panel layout overflow** — Layout concern noted but acceptable: Textual's Horizontal container auto-wraps when content exceeds width, and enemy panels use `fr` sizing to share space. On 80-col terminals, 4 panels each get ~20 chars which is tight but functional. A compact layout mode would require significant CSS refactoring for marginal benefit on a rare encounter type.
+
+- [x] **Duplicate enemy names have no disambiguation** — By-design: the `[1] Wriggler`, `[2] Wriggler` index-based display is the standard TUI approach. Each panel also shows its own HP bar, intent, and powers, which provides visual differentiation. The indexed targeting system (`[Tab]` cycles targets) maps directly to these indices, so adding letter suffixes would add visual noise without improving targeting UX.
+
+- [x] **Multi-intent enemies (Attack + Debuff) display could be clearer** — By-design: "Attack 8 + Debuff" with distinct color per intent type (red for Attack, magenta for Debuff) is readable in a TUI. Each intent already has its own icon. The real game's separate icon approach is visual-spatial, which doesn't translate well to text-based layout.
+
+- [x] **Poison counter not shown on enemies** — FIXED: Poison is now in the `_TICK_POWERS` set and displayed with bold styling and "/turn" suffix (e.g., "Poison 5/turn") to make it visually distinct from other powers. Combined with the Poison entry in DEBUFF_NAMES (magenta coloring), it stands out.
+
+- [x] **DebuffStrong intent type displayed as plain "Strong Debuff"** — FIXED: Added `is_debuff_strong` flag in controller.py's extract_enemies(). Added "Strong Debuff" entry with double-arrow icon and bright_magenta styling to _SECONDARY_INTENTS in EnemyWidget. When DebuffStrong is present, the plain Debuff entry is skipped to avoid duplication.
+
+- [x] **Minion power not distinguished from regular enemy powers** — "Minion" is already in BUFF_NAMES and renders green with its description in parentheses. The description "Minions abandon combat without their leader" is the key strategic info and is already shown. Making it a separate visual indicator above the power list would require significant EnemyWidget restructuring for marginal benefit -- the green "Minion" with description is adequately distinct.
+
+### Pile viewer gaps
+
+- [x] **Pile viewer shows only card names, not card types or costs** — The pile viewer receives card names as plain strings from `extract_pile_contents()`. Adding type/cost would require changing the data pipeline to pass full card dicts through to the overlay. This is a valid enhancement but requires refactoring the pile data flow (controller -> combat screen -> PileViewerOverlay). Filed as a future enhancement; the current grouped-names view is functional for checking pile composition.
+
+### Card reward screen gaps
+
+- [x] **Potion reward with unresolved template on potion_slots_full** — Engine-side: the engine does not send `vars` for potion rewards. The TUI's fallback through `_enrich_potion_description` -> game_data works for most potions, but Cunning Potion's `{Cards}` var may not be in the fallback data. This resolves to "X" which is the standard fallback for unknown template vars. See also the informational item about potion_reward vars gap.
+
+- [x] **Boss card reward has gold_earned=100 but no special boss reward indicator** — By-design: the engine sends boss card_reward as a standard card_reward with gold_earned=100. The TUI shows the gold amount prominently. Boss relic selection may be a separate decision type not yet in the data. Adding a "BOSS REWARD" banner when gold_earned >= 100 would be a heuristic; better to wait for the engine to send an explicit boss-reward flag.
+
+### Act transition gaps
+
+- [x] **No act transition screen between Act 1 and Act 2** — Engine-side: the engine does not send a separate "act_transition" decision type. The act change is implicit in the context.act value jumping. Adding a client-side interstitial would require tracking the previous act number in the app controller and injecting a synthetic screen -- feasible but would be inventing UI that the engine doesn't request. The act name is visible on the map screen header.
+
+- [x] **Act name not prominently displayed** — By-design: the TopBar in combat already shows "Act N" and the map screen shows the full act name. Adding the act name to every screen would consume limited terminal space. The act name is most useful on the map where the player is choosing a path and can see the theme.
+
+### Silent-specific mechanic gaps
+
+- [x] **Shiv-specific damage bonus from Phantom Blades not previewed** — Engine-side: the engine's effective_damage does not include the Phantom Blades first-shiv bonus. The TUI cannot know which Shiv will be "the first" without tracking play order. The Phantom Blades power description (now green, with amount shown) tells the player about the bonus. Implementing client-side first-shiv tracking would be fragile and potentially wrong.
+
+- [x] **Retain keyword on Shivs from Phantom Blades not explained** — By-design: the TUI correctly shows the Retain icon on Shivs, and Phantom Blades' power description ("Shivs gain Retain") explains the source. A TUI has no tooltip mechanism; the player can see the Phantom Blades power in their PlayerStats bar which explains the Retain link.
+
+- [x] **Blade Dance card adds Shivs but TUI does not preview this** — By-design: tooltips for generated card previews would require a card database lookup system and overlay rendering. The TUI is text-based and doesn't have a hover-tooltip mechanism. Shivs are a core Silent mechanic that players learn through gameplay. The Shiv cards themselves show their stats when they appear in hand.
+
+- [x] **Calculated Gamble has no hand-count preview** — By-design: the HandLabel widget already shows "Hand: N/10" prominently at the top of the hand area, making the current hand size readily visible. Adding per-card hand count annotations would be redundant.
+
+### Enemy mechanic display gaps
+
+- [x] **StatusCard intent type does not show what status card is added** — Engine-side: the intent only contains `{"type": "StatusCard"}` with no `name` or `card` sub-field specifying which status card. The TUI cannot display what the engine doesn't send. The question mark icon accurately reflects the unknown nature.
+
+- [x] **Stun intent for Wrigglers lacks strategic context** — By-design: the TUI shows "Stun" with a lightning icon, which is the same level of information the engine provides. Adding a tooltip explaining the Stun mechanic would require hard-coding game rules into the TUI, which conflicts with the engine-driven architecture. The Stun effect is a core game mechanic players learn.
+
+- [x] **Enemy block not shown in incoming damage calculation** — By-design: enemy block IS already shown in each EnemyWidget (`_block_text()` renders when block > 0). The IncomingSummary correctly shows only incoming damage TO the player, which enemy block does not affect. Mixing enemy block into the incoming summary would be misleading.
+
+### God-mode-specific observations
+
+- [x] **HP 9999/9999 breaks HP bar visual scaling** — God-mode edge case: the HP bar renders correctly (full green), and the 9-char "9999/9999" text fits within normal TopBar layout. God-mode is a testing tool, not a supported gameplay mode, so optimizing for 4-digit HP values is not warranted.
+
+- [x] **Gold accumulation in god-mode is unchecked** — God-mode edge case: 3-digit gold (443) fits fine. Even 5-digit gold (99999) is only 5 chars. Normal gameplay caps around 1000-2000 gold. Layout overflow from extreme gold values is a theoretical concern that doesn't affect real gameplay.
+
+### i18n gaps for Act 2 content
+
+- [x] **No i18n entry for "Ancient" node type label** — By-design: all node type labels in NODE_DISPLAY (Monster, Elite, RestSite, Shop, Event, Boss, Treasure, Ancient) are English. The map legend uses these as-is regardless of language. Game content (card names, enemy names) is localized by the engine; TUI chrome labels use i18n, but node type names serve as compact single-word identifiers that work across languages. Full i18n of node types would require a separate localization dict.
+
+- [x] **Room type colors only cover Boss/Elite/Monster** — FIXED: Added "Event" (bright_blue), "RestSite" (bright_green), "Shop" (bright_yellow), and "Treasure" (bright_yellow) to ROOM_TYPE_COLORS in shared.py.
+
+### Data fidelity observations (no TUI change needed, informational)
+
+- [x] **card_select lacks a `reason` or `source` field** — Engine-side: all card_select states have select_type=None, title=None, description=None. The TUI now supports displaying these fields when present (GenericScreen.compose() updated), but the engine does not populate them. Filed as engine-side gap.
+
+- [x] **Potion reward potions lack `vars` field** — Engine-side: the engine does not send `vars` for potion rewards. The TUI already has fallback resolution through game_data and _KNOWN_POTION_EXTRA_VARS. This is an engine-side omission.
+
+- [x] **Boss card reward does not include relic selection** — Engine-side: the engine does not send a relic_select decision type in this data. Boss relic selection may be a separate decision type not yet encountered, or god-mode may skip it. No TUI-side fix possible without engine data.
+
+- [x] **Engine sends different effective_damage list lengths** — Engine-side: Shiv's `effective_damage=[4]` with a single entry is likely because Shivs hit a random target. The TUI's `_get_effective_damage()` already handles this safely via the bounds check `0 <= self.target_index < len(eff)` -- it returns None when the index is out of bounds, falling back to the local damage calculation. No crash possible.

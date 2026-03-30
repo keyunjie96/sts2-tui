@@ -53,7 +53,8 @@ KEYWORD_ICONS: dict[str, str] = {
     "Ethereal": "\u2728",
     "Innate": "\u2605",
     "Retain": "\u21ba",
-    "Sly": "\u2694",
+    "Sly": "\U0001f5e1",
+    "Unplayable": "\u26d4",
 }
 
 # Room type colors for combat TopBar
@@ -61,6 +62,10 @@ ROOM_TYPE_COLORS: dict[str, str] = {
     "Boss": "bold red",
     "Elite": "bold bright_magenta",
     "Monster": "dim white",
+    "Event": "bold bright_blue",
+    "RestSite": "bold bright_green",
+    "Shop": "bold bright_yellow",
+    "Treasure": "bold bright_yellow",
 }
 
 
