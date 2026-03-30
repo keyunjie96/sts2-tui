@@ -17,7 +17,7 @@ from textual.widgets import Static
 from textual.reactive import reactive
 from rich.text import Text
 
-from sts2_tui.tui.controller import GameController, _name_str, extract_reward_cards
+from sts2_tui.tui.controller import GameController, _name_str, resolve_card_description, extract_reward_cards
 from sts2_tui.tui.i18n import L
 from sts2_tui.tui.shared import CARD_TYPE_COLORS, RARITY_COLORS, build_status_footer, build_upgrade_preview
 
@@ -112,6 +112,30 @@ class RewardCardWidget(Static):
         return t
 
 
+def _resolve_potion_reward_description(potion: dict) -> str:
+    """Resolve template variables in a potion reward description.
+
+    Potion rewards from the engine often have unresolved template vars
+    like {Block}, {Damage}, {Cards} etc. because the engine does not send
+    ``vars`` for potion rewards.  We reuse the shop screen's
+    ``_enrich_potion_description`` which resolves templates using
+    game_data and well-known fallback values.
+    """
+    try:
+        from sts2_tui.tui.screens.shop import _enrich_potion_description
+        resolved = _enrich_potion_description(potion)
+        if resolved:
+            return resolved
+    except Exception:
+        pass
+    # Fallback: try resolve_card_description with engine-sent vars
+    raw_desc = potion.get("description", "")
+    if not raw_desc:
+        return ""
+    pot_vars = potion.get("vars") or {}
+    return resolve_card_description(raw_desc, pot_vars)
+
+
 class PotionRewardWidget(Static):
     """A single potion reward option."""
 
@@ -123,7 +147,7 @@ class PotionRewardWidget(Static):
     def compose(self) -> ComposeResult:
         p = self.potion
         name = _name_str(p.get("name", "?"))
-        desc = _name_str(p.get("description", ""))
+        desc = _resolve_potion_reward_description(p)
 
         line = Text()
         line.append(f"  [P{self.index + 1}] ", style="bold cyan")
@@ -165,6 +189,7 @@ class CardRewardScreen(Screen):
         self.cards: list[dict] = extract_reward_cards(state)
         self.potion_rewards: list[dict] = state.get("potion_rewards") or []
         self.potion_slots_full: bool = state.get("potion_slots_full", False)
+        self.can_skip: bool = state.get("can_skip", True)
         self._is_composed = False
         self._busy = False
         self._refreshing = False
@@ -242,8 +267,9 @@ class CardRewardScreen(Screen):
             bindings.append(f" {L('select')}  ", style="dim")
             bindings.append("[Enter]", style="bold yellow")
             bindings.append(f" {L('confirm')}  ", style="dim")
-        bindings.append("[Esc]", style="bold yellow")
-        bindings.append(f" {L('skip')}", style="dim")
+        if self.can_skip:
+            bindings.append("[Esc]", style="bold yellow")
+            bindings.append(f" {L('skip')}", style="dim")
         if self.potion_rewards:
             bindings.append("  [P]", style="bold cyan")
             bindings.append(f" {L('collect_potion')}  ", style="dim")
@@ -287,6 +313,9 @@ class CardRewardScreen(Screen):
 
     async def action_skip(self) -> None:
         if self._busy:
+            return
+        if not self.can_skip:
+            self.notify("You must select a card", severity="warning")
             return
         self._busy = True
         try:

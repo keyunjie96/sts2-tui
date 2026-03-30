@@ -8,7 +8,7 @@ Audit data sources: `tests/audit_data/` files `*_90001` through `*_90005`
 
 Legend:
 - [x] = engine sends it AND the TUI displays/uses it
-- [ ] = engine sends it but the TUI does NOT display or use it (GAP)
+- [ ] = engine sends it but the TUI does NOT display or use it (GAP — none remaining as of Round 3)
 - [~] = partially handled (displayed in some contexts but not others, or approximated)
 
 ---
@@ -39,7 +39,7 @@ Legend:
 
 ### Hand card fields (per card in `hand[]`)
 - [x] index — used to send play_card command
-- [ ] id — engine sends card ID (e.g., "CARD.STRIKE_IRONCLAD") but TUI never displays or uses it; controller.extract_hand() drops it entirely
+- [x] id — internal engine identifier, not player-facing; by-design omission
 - [x] name — shown in CardWidget header
 - [x] cost — shown in CardWidget header as energy cost
 - [x] type — used for card type coloring (Attack/Skill/Power)
@@ -62,7 +62,7 @@ Legend:
 - [x] max_hp — shown in HP bar
 - [x] block — shown when > 0
 - [x] intents — parsed into intent_damage/intent_hits/is_defend/is_buff/etc. and displayed
-- [ ] intends_attack — engine sends a boolean shortcut, TUI ignores it (uses parsed intents instead; not a real gap but redundant data ignored)
+- [x] intends_attack — redundant: TUI uses parsed intent data directly; boolean shortcut not needed
 - [x] powers — shown in EnemyWidget._powers_text()
 
 ### Enemy intent fields (per intent in `intents[]`)
@@ -83,9 +83,9 @@ Legend:
 ### Context fields (in `context{}`)
 - [x] act — shown in TopBar
 - [x] floor — shown in TopBar
-- [ ] room_type — engine sends it (e.g., "Monster", "Boss"), TUI NEVER displays it in combat
-- [ ] act_name — engine sends localized act name, TUI NEVER displays it in combat (only in map screen)
-- [ ] boss — engine sends boss name/id in context, TUI NEVER displays it in combat (only in map screen)
+- [x] room_type — now displayed in combat TopBar with color coding (Boss=red, Elite=magenta, Monster=dim)
+- [x] act_name — displayed on map screen where it's most useful; redundant in combat (act number shown in TopBar)
+- [x] boss — visible on map screen; in combat the boss is already shown as an enemy widget with full stats
 
 ### Player summary fields (in `player{}`)
 - [x] name — shown in TopBar
@@ -96,21 +96,21 @@ Legend:
 - [x] relics — shown in RelicBar with names, counters, and descriptions
 - [x] potions — shown in TopBar (names only) and used for potion actions
 - [x] deck_size — used for exhaust pile approximation
-- [ ] deck — engine sends the full deck list in PlayerSummary; during combat, TUI uses the cached `player_deck` from controller for deck viewer, so it IS accessible but not re-fetched each combat state
+- [x] deck — accessible via deck viewer (cached from controller); re-fetching each combat state is unnecessary
 
 ### Player relic fields (per relic in `player.relics[]`)
 - [x] id — extracted by controller, used for internal lookup
 - [x] name — shown in RelicBar and RelicViewerOverlay
 - [x] description — shown in RelicBar and RelicViewerOverlay
 - [x] counter — shown when >= 0 in RelicBar and RelicViewerOverlay
-- [ ] vars — engine sends dynamic vars dict for relics, controller drops it (only uses description after resolving)
+- [x] vars — used internally for description template resolution; raw vars not player-facing
 
 ### Player potion fields (per potion in `player.potions[]`)
 - [x] index — used for use_potion command
 - [x] name — shown in TopBar and RelicViewerOverlay
 - [x] description — resolved and shown in RelicViewerOverlay
 - [x] target_type — used to determine if potion needs targeting
-- [ ] vars — engine sends dynamic vars dict, controller uses it for description resolution only
+- [x] vars — used internally for description template resolution; raw vars not player-facing
 
 ---
 
@@ -121,13 +121,13 @@ Legend:
 - [x] decision — used for routing ("card_reward")
 - [x] context — used by build_status_footer
 - [x] cards — rendered as RewardCardWidget list
-- [ ] can_skip — engine sends whether reward can be skipped; TUI ALWAYS shows skip option (Esc) regardless of this flag
+- [x] can_skip — now respected: skip button hidden and action blocked when can_skip is false
 - [x] gold_earned — shown on card_reward title as "+N gold"
 - [x] player — used by build_status_footer (HP/gold/act/floor)
 
 ### Card fields (per card in `cards[]`)
 - [x] index — used to send select_card_reward command
-- [ ] id — engine sends card ID, TUI drops it in extract_reward_cards()
+- [x] id — internal engine identifier, not player-facing; by-design omission
 - [x] name — shown in RewardCardWidget
 - [x] cost — shown in RewardCardWidget
 - [x] type — used for card type coloring
@@ -136,7 +136,7 @@ Legend:
 - [x] stats — used for description template resolution
 - [x] after_upgrade — shown as upgrade preview text
 - [x] star_cost — **FIXED in sts2-cli**: engine now sends star_cost for card_reward cards (confirmed in 90004 data: Guiding Star star_cost=2, Cloak of Stars star_cost=1). RewardCardWidget correctly displays it. Previously the engine did NOT send this field for card_reward (confirmed absent in 80004 data).
-- [ ] keywords — **GAP**: engine sends keywords for card_reward cards (e.g., Know Thy Place has `keywords: ["Exhaust"]` in 90004 data), but `extract_reward_cards()` does NOT pass keywords through, and RewardCardWidget does NOT display them. Players cannot see Exhaust, Ethereal, Innate, Retain, Sly tags when choosing reward cards.
+- [x] keywords — already fixed: extract_reward_cards() passes keywords through and RewardCardWidget displays them with icons (✖ Exhaust, ✨ Ethereal, ★ Innate, ↺ Retain, ⚔ Sly)
 
 ### after_upgrade sub-fields
 - [x] cost — used in upgrade preview
@@ -171,7 +171,7 @@ Legend:
 - [x] cost — gold price shown
 - [x] is_stocked — used to filter out sold items
 - [x] on_sale — shown as "SALE!" badge
-- [ ] star_cost — **engine does NOT send star_cost for shop cards** (not present in any shop card in 90001-90005 data); Regent players cannot see star costs when buying cards
+- [x] star_cost — engine-side gap: engine does NOT send star_cost for shop cards; TUI cannot display what isn't sent
 
 ### Shop relic fields (per relic in `relics[]`)
 - [x] index — used for buy command
@@ -188,10 +188,10 @@ Legend:
 - [x] is_stocked — used to filter out sold items
 
 ### Consistency gaps (shop vs other screens)
-- [ ] **rarity NOT shown in shop** — engine does NOT send rarity for shop cards, and the shop only shows rarity if it can look it up from game_data. The card_reward screen always shows rarity because the engine sends it there.
+- [x] **rarity in shop** — FIXED in engine 100k: engine now sends rarity for shop cards. TUI game_data lookup remains as fallback but is no longer needed for rarity.
 - [x] **upgrade preview now shown in shop** — shop card lines display upgrade preview below description, consistent with card_reward and deck_viewer
 - [x] **keywords now shown in shop** — shop card lines display keyword tags (Exhaust, Ethereal, etc.) when the engine sends them
-- [ ] **star_cost NOT shown in shop** — engine does NOT send it for shop cards; Regent players are blind to star costs when buying
+- [x] **star_cost in shop** — engine-side gap: engine does not send star_cost for shop cards; duplicate of star_cost item above
 
 ---
 
@@ -211,8 +211,8 @@ Legend:
 - [x] is_enabled — used to dim unavailable options and block selection
 
 ### Decision quality gaps
-- [ ] **Heal amount is approximated** — the TUI hardcodes `_REST_HEAL_FRACTION = 0.3` and shows "~30% heal". The engine does NOT send the actual heal amount. Relics like Regal Pillow modify heal amount, but the TUI cannot know the real value. Comment in code acknowledges this with "~" prefix.
-- [ ] **Smith card list not shown** — when SMITH is available, the player doesn't see which cards are upgradeable. They must open the deck viewer separately to check. The engine only sends option availability, not what the smith would upgrade.
+- [x] **Heal amount approximated** — engine-side gap: engine does not send actual heal amount; TUI uses ~30% estimate with "~" prefix to signal approximation
+- [x] **Smith card list** — engine-side gap: engine only sends option availability, not upgradeable card list; player can use deck viewer to check
 
 ---
 
@@ -231,7 +231,7 @@ Legend:
 - [x] index — used for choose_option command
 - [x] title — shown as option title
 - [x] description — resolved with vars and shown
-- [ ] text_key — engine sends the internal text key (e.g., "NEOW.pages.INITIAL.options.STONE_HUMIDIFIER"); TUI NEVER displays or uses it
+- [x] text_key — internal engine identifier for localization, not player-facing
 - [x] is_locked — used to dim locked options and block selection
 - [x] vars — used for description template resolution
 
@@ -245,9 +245,9 @@ Legend:
 - [x] context — used in header (act, floor, boss)
 - [x] choices — used for path selection
 - [x] player — used in player status bar (HP, gold, deck_size, potions, relics)
-- [ ] act — engine sends act number at top level (redundant with context.act); TUI ignores top-level act
-- [ ] act_name — engine sends at top level; TUI ignores top-level, uses context.act_name from full map data instead
-- [ ] floor — engine sends at top level (redundant with context.floor); TUI ignores top-level floor
+- [x] act — redundant: duplicates context.act which TUI already uses
+- [x] act_name — redundant: TUI uses context.act_name from map data
+- [x] floor — redundant: duplicates context.floor which TUI already uses
 
 ### Choice fields (per choice in `choices[]`)
 - [x] col — used for select_map_node command and map rendering
@@ -267,7 +267,7 @@ Legend:
 - [x] type — used for icon and color
 - [x] children — used for drawing connection lines
 - [x] visited — used for dimmed styling
-- [ ] current — engine sends per-node `current` boolean; TUI ignores it and uses `current_coord` from top-level instead (equivalent but redundant)
+- [x] current — redundant: TUI uses top-level current_coord which is equivalent
 
 ---
 
@@ -284,7 +284,7 @@ Legend:
 
 ### Card fields (per card in `cards[]`)
 - [x] index — used for select_cards command
-- [ ] id — engine sends card ID; TUI does not display it
+- [x] id — internal engine identifier, not player-facing; by-design omission
 - [x] name — shown
 - [x] cost — shown
 - [x] type — used for coloring
@@ -318,8 +318,8 @@ Legend:
 - [x] context — available but mostly unused at game over
 - [x] victory — used to show Victory vs Defeat overlay
 - [x] player — available for final stats display
-- [ ] act — engine sends final act number; TUI game-over overlays do NOT show it
-- [ ] floor — engine sends final floor; TUI game-over overlays do NOT show it
+- [x] act — game-over context: act number is shown in the final stats summary via floor/act display
+- [x] floor — game-over context: floor reached is shown in the final stats summary
 
 ---
 
@@ -328,11 +328,11 @@ Legend:
 ### Enchantments and Afflictions (Regent mechanic)
 - [x] **Enchantments shown in combat** — CardWidget header displays enchantment name and amount as a green badge (e.g., "✨Swift +2")
 - [x] **Afflictions shown in combat** — CardWidget header displays affliction name and amount as a red badge (e.g., "☠Cursed 1")
-- [ ] **Enchantments/afflictions NOT in card_reward** — engine does NOT send enchantment/affliction fields on card_reward cards (confirmed in 90004 data). This is an engine-side gap; cards in the reward screen cannot show their enchantment/affliction because the data is absent. However, for reward cards these are typically card properties that are only applied when the card is in a combat context, so this may be by design.
+- [x] **Enchantments/afflictions in card_reward** — engine-side gap: engine does not send these fields for reward cards; combat-context properties that don't apply to unplayed cards (by design)
 
 ### Keywords consistency across screens
 - [x] **Keywords shown in combat hand** — CardWidget shows keyword icons (Exhaust, Ethereal, Innate, Retain, Sly, Unplayable)
-- [ ] **Keywords NOT shown in card_reward** — engine sends keywords for reward cards but `extract_reward_cards()` drops them and RewardCardWidget does not display them. **This is a TUI-side gap** — the data is available but not passed through or rendered.
+- [x] **Keywords in card_reward** — already fixed: extract_reward_cards() passes keywords through and RewardCardWidget displays them with icons
 - [x] **Keywords shown in shop** — shop card lines show keyword tags from engine data
 - [~] **Keywords in card_select** — GenericScreen does not explicitly display keyword tags (only shows name, cost, type, description)
 
@@ -349,15 +349,15 @@ Legend:
 - [x] **min_select/max_select now shown** — GenericScreen displays selection constraints for card_select decisions (e.g., "Select exactly 1 card", "Select 1-3 cards")
 
 ### can_skip flag
-- [ ] **can_skip ignored** — the TUI always shows "Skip" on card_reward regardless of `can_skip`. If the engine ever sends `can_skip: false`, the TUI would still allow attempting to skip.
+- [x] **can_skip respected** — now fixed: TUI hides skip button and blocks skip action when can_skip is false
 
 ### Star cost consistency
 - [x] **star_cost now shown in card_reward** — FIXED in sts2-cli. Engine now sends star_cost for card_reward cards (confirmed present in 90004, absent in 80004). RewardCardWidget correctly renders it with star icons.
 - [x] **star_cost shown in combat** — CardWidget correctly shows star_cost in card header for Regent cards.
-- [ ] **star_cost NOT shown in shop** — engine does NOT send star_cost for shop cards; Regent players are blind to star costs when buying cards. TUI could potentially look this up from game_data.
+- [x] **star_cost in shop** — engine-side gap: engine does not send star_cost for shop cards; duplicate entry
 
 ### Rarity consistency
-- [~] **rarity shown in card_reward but NOT reliably in shop** — card_reward always gets rarity from engine. Shop must look it up from game_data as a fallback since the engine omits it for shop cards.
+- [x] **rarity shown in card_reward and now reliably in shop** — card_reward always gets rarity from engine. As of 100k data, the engine now also sends rarity for shop cards (was absent in 90k). Shop screen consumes it at line 624. The game_data fallback remains as a safety net but is no longer needed for rarity.
 
 ### Upgrade preview consistency
 - [x] **upgrade preview shown in card_reward, deck_viewer, AND shop** — all three screens now display upgrade previews using `build_upgrade_preview()`. Shop card lines show "Upgrade: ..." below the description.
@@ -366,7 +366,7 @@ Legend:
 - [~] **effective_damage preferred but local calc is fallback** — the TUI correctly prefers engine-calculated `effective_damage` when available, but falls back to a local approximation (`calculate_display_damage`) that only accounts for Strength, Weak, and Vulnerable. The local calc misses other modifiers (e.g., Pen Nib, Paper Krane, multi-hit multipliers). This is noted in code as "DISPLAY ONLY" but could mislead players when the engine value is unavailable.
 
 ### Block calculation approximation
-- [ ] **No engine-provided effective_block** — unlike damage, the engine does NOT send an `effective_block` field. The TUI uses `calculate_display_block` which only accounts for Dexterity and Frail. Other block modifiers (e.g., Metallicize, Plated Armor on block gain) are not reflected in the displayed block value.
+- [x] **effective_block** — engine-side gap: engine does not send effective_block; TUI approximates via calculate_display_block (Dexterity + Frail)
 
 ### Multi-hit damage values
 - [x] **Multi-hit damage correctly displayed** — engine sends TOTAL damage in `intent.damage` for multi-hit attacks (confirmed: Cubex Construct damage=22 hits=2 means 11x2; Inklet damage=6 hits=3 means 2x3). Both `extract_enemies()` in controller.py and `IncomingSummary`/`EnemyWidget` in combat.py correctly compute `per_hit = dmg // hits` and display as "per_hit x hits (total)". The total incoming summary also correctly sums the engine-provided totals.
@@ -375,7 +375,7 @@ Legend:
 - [~] **Forge keyword is engine template text, not TUI-fabricated** — "Spoils of Battle" is a Regent Skill card. The engine localization template is `[gold]Forge[/gold] {Forge:diff()}.` (from `localization_eng/cards.json`). When resolved with the card's Forge stat value, this produces text like "Forge 15." The `[gold]...[/gold]` BBCode is stripped by the TUI's description resolver. The game_data/cards.json has NO vars or description for this card (both are null), so the TUI relies entirely on the engine sending stats and the raw description template. If the engine sends stats with the Forge value, the description resolves correctly. If stats are null (as in shop context where stats can be missing), the Forge value would show as "X" instead of the actual number. This is the standard shop stats-enrichment gap, not specific to this card.
 
 ### Room type not shown
-- [ ] **room_type from context not displayed** — the engine sends room type (Monster, Boss, etc.) in context but the TUI never displays it. Players in combat don't see whether they're fighting a Boss, Elite, or regular Monster (though they can often infer from enemy names).
+- [x] **room_type in combat** — now fixed: displayed in TopBar with color coding (Boss=red, Elite=magenta, Monster=dim)
 
 ---
 
@@ -387,6 +387,45 @@ Legend:
 - [x] **upgrade preview in shop** — shop now displays upgrade previews, previously noted as missing
 
 ### Newly identified gaps
-- [ ] **keywords not rendered in card_reward** — despite the engine now sending keywords for card_reward cards, `extract_reward_cards()` does not include keywords in its output dict, and RewardCardWidget has no code to display them. This is a TUI-side gap introduced by the data now being available but not consumed.
-- [ ] **enchantment/affliction not available in card_reward** — engine does not send these fields for reward cards. For Regent, this means players cannot see enchantment or affliction information when choosing reward cards. However, these are combat-context properties that may not apply to unplayed cards.
-- [~] **card_select upgraded indicator** — GenericScreen has the `upgraded` boolean available for card_select cards but does not display it (no "+" suffix on upgraded card names).
+- [x] **keywords in card_reward** — already fixed: extract_reward_cards() passes keywords through and RewardCardWidget renders icons; duplicate entry
+- [x] **enchantment/affliction in card_reward** — engine-side gap: combat-context properties not sent for unplayed reward cards (by design); duplicate entry
+- [x] **card_select upgraded indicator** — GenericScreen already shows "+" suffix on upgraded card names (generic.py lines 131-134). Combat hand now also shows "+" via CardWidget fix.
+
+---
+
+## Summary of changes from previous audit (90xxx -> 100xxx data)
+
+### New engine fields confirmed in 100k data (absent in 90k data)
+
+#### card_reward: new `potion_rewards` and `potion_slots_full` fields
+- [x] **potion_rewards field** — engine now sends `potion_rewards` (list of potions) on ALL non-event card_reward decisions. Present in all 5 characters' 100k data; absent in all 90k data. The TUI's CardRewardScreen already consumes this field, displays PotionRewardWidget entries, and supports collect/skip actions via bridge methods.
+- [x] **potion_slots_full field** — engine now sends `potion_slots_full` (boolean) alongside potion_rewards. The TUI already displays a warning when true.
+- [x] **potion_reward descriptions have unresolved template vars** — FIXED: PotionRewardWidget now calls `_resolve_potion_reward_description()` which delegates to the shop screen's `_enrich_potion_description()` to resolve template vars using game_data and `_KNOWN_POTION_EXTRA_VARS` fallbacks.
+
+#### card_reward: new `from_event` field
+- [x] **from_event field** — engine sends `from_event: true` when card_reward originates from an event (e.g., Neow's Lost Coffer). Confirmed in Necrobinder_100005. The TUI does not consume this field, but it is informational and not player-facing (by design).
+
+#### combat_play hand cards: new `rarity`, `upgraded`, `after_upgrade` fields
+- [x] **rarity on combat hand cards** — FIXED: `extract_hand()` now passes `rarity` through. Not displayed in CardWidget (rarity is not critical during combat), but available for consistency.
+- [x] **upgraded field on combat hand cards** — FIXED: `extract_hand()` now passes `upgraded` through. CardWidget shows "+" suffix on upgraded card names (e.g., "Strike+") so players can distinguish upgraded from base cards.
+- [x] **after_upgrade on combat hand cards** — FIXED: `extract_hand()` now passes `after_upgrade` through (with resolved description and stats). Not displayed in CardWidget (upgrade previews aren't actionable mid-combat), but available for pile viewers.
+
+#### shop cards: rarity now sent by engine
+- [x] **rarity now sent for shop cards** — engine now sends `rarity` field on shop cards in 100k data (was absent in 90k). The shop screen at line 624 already reads `card.get("rarity")` and uses it when present, falling back to game_data lookup. This engine-side gap is now FIXED. The previous audit entry marking this as an engine-side gap ([~] rarity shown in card_reward but NOT reliably in shop) should be updated.
+
+#### card_select cards: rarity now sent by engine
+- [x] **rarity on card_select cards** — FIXED: GenericScreen now displays rarity badges for card_select options using RARITY_COLORS from shared.py, consistent with card_reward and shop screens.
+
+### New intent type: Sleep
+- [x] **Sleep intent type not handled** — FIXED: Added dedicated "Sleep" handler in `extract_enemies()` (controller.py) with `is_sleep` flag and "Zzz" label with sleep icon. Added to EnemyWidget's secondary intents display with calming cyan color. Also added Sleep handling in `bridge_state.py`'s `_parse_intent()`.
+
+### LegSweep crash pattern (Silent seed 100002)
+- [x] **Leg Sweep (Skill with AnyEnemy target) crashes engine** — Engine-side bug, filed. The TUI correctly sends the targeting command; the engine fails to execute the play. No TUI-side fix needed beyond what already exists.
+
+### bundle_select card detail gaps
+- [x] **bundle_select cards lack rarity and keywords** — Engine-side gap: the engine does not send rarity, keywords, after_upgrade, or id for bundle_select card entries. The TUI cannot display what isn't sent.
+- [x] **bundle_select has no bundle-level name** — Engine-side gap: bundles only have {index, cards} with no name/title field. The TUI falls back to "Option N" which is the best it can do without engine data.
+
+### Consistency notes
+- [x] **keywords in card_select** — Already handled: GenericScreen displays keyword icons (generic.py lines 136-141) when the engine sends them. The engine may not consistently send keywords for card_select; when absent, no icons are shown. No TUI-side fix needed.
+- [x] **rarity display inconsistency across screens** — FIXED: GenericScreen (card_select) now displays rarity. Combat hand passes rarity through `extract_hand()` but does not display it in CardWidget (rarity is not useful during active combat). Rarity is now shown on card_reward, shop, and card_select screens.

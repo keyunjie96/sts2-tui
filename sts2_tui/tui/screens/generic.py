@@ -19,7 +19,7 @@ from rich.text import Text
 
 from sts2_tui.tui.controller import GameController, _name_str, resolve_card_description
 from sts2_tui.tui.i18n import L
-from sts2_tui.tui.shared import CARD_TYPE_COLORS, build_status_footer, build_upgrade_preview
+from sts2_tui.tui.shared import CARD_TYPE_COLORS, RARITY_COLORS, build_status_footer, build_upgrade_preview
 
 log = logging.getLogger(__name__)
 
@@ -127,11 +127,29 @@ class GenericScreen(Screen):
 
             marker = " >>>" if i == self.selected else "    "
             t.append(f"{marker} [{i + 1}] ", style="bold yellow")
-            t.append(f"{name}", style=f"bold {type_color}")
+            # Show "+" suffix for upgraded cards
+            if opt.get("upgraded"):
+                t.append(f"{name}+", style=f"bold {type_color}")
+            else:
+                t.append(f"{name}", style=f"bold {type_color}")
+            # Show keyword icons
+            for kw in opt.get("keywords") or []:
+                if isinstance(kw, str):
+                    kw_icons = {"Exhaust": "\u2716", "Ethereal": "\u2728", "Innate": "\u2605", "Retain": "\u21ba", "Sly": "\u2694"}
+                    icon = kw_icons.get(kw.title(), "")
+                    if icon:
+                        t.append(f" {icon}", style="bold red" if kw.title() == "Exhaust" else "bold cyan")
             if cost is not None:
                 t.append(f" ({cost})", style="yellow")
             if card_type:
                 t.append(f" [{card_type}]", style="dim cyan")
+            # Show rarity for card_select (consistent with card_reward and shop)
+            rarity = opt.get("rarity", "")
+            if rarity and decision == "card_select":
+                rarity_label, rarity_color = RARITY_COLORS.get(
+                    rarity, (rarity, "dim")
+                )
+                t.append(f" {rarity_label}", style=f"bold {rarity_color}")
             if desc:
                 t.append(f"  - {desc[:120]}", style="dim")
             t.append("\n")

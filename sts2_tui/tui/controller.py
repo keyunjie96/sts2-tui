@@ -342,6 +342,7 @@ def extract_enemies(state: dict) -> list[dict]:
         is_heal = False
         is_stun = False
         is_summon = False
+        is_sleep = False
         for it in intents_raw:
             itype = it.get("type", "")
             dmg = it.get("damage")
@@ -383,6 +384,9 @@ def extract_enemies(state: dict) -> list[dict]:
             elif itype == "Summon":
                 is_summon = True
                 intent_parts.append("Summon")
+            elif itype == "Sleep":
+                is_sleep = True
+                intent_parts.append("\U0001f4a4 Zzz")
             elif itype:
                 intent_parts.append(itype)
         intent_summary = " + ".join(intent_parts) if intent_parts else ""
@@ -404,6 +408,7 @@ def extract_enemies(state: dict) -> list[dict]:
             "is_heal": is_heal,
             "is_stun": is_stun,
             "is_summon": is_summon,
+            "is_sleep": is_sleep,
             "powers": powers,
             "is_dead": hp_val <= 0,
         })
@@ -609,6 +614,22 @@ def extract_hand(state: dict) -> list[dict]:
         # to avoid false positives from unresolved stat variables that become "X".
         if _detect_x_cost(cost, raw_desc):
             cost = -1  # -1 is our sentinel for X-cost
+        # Process after_upgrade data if present
+        after_upgrade_raw = card.get("after_upgrade")
+        after_upgrade = None
+        if after_upgrade_raw:
+            up_stats = after_upgrade_raw.get("stats") or {}
+            up_desc_raw = after_upgrade_raw.get("description", "")
+            up_desc = resolve_card_description(up_desc_raw, up_stats)
+            up_cost = after_upgrade_raw.get("cost", cost)
+            after_upgrade = {
+                "cost": up_cost,
+                "stats": up_stats,
+                "description": up_desc,
+                "added_keywords": after_upgrade_raw.get("added_keywords") or [],
+                "removed_keywords": after_upgrade_raw.get("removed_keywords") or [],
+            }
+
         result.append({
             "index": card.get("index", 0),
             "name": _name_str(card.get("name")),
@@ -627,6 +648,9 @@ def extract_hand(state: dict) -> list[dict]:
             "enchantment_amount": card.get("enchantment_amount"),
             "affliction": card.get("affliction"),
             "affliction_amount": card.get("affliction_amount"),
+            "upgraded": card.get("upgraded", False),
+            "rarity": card.get("rarity", ""),
+            "after_upgrade": after_upgrade,
         })
     return result
 

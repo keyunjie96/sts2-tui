@@ -85,9 +85,14 @@ class TopBar(Static):
         filled = int(ratio * bar_w)
         empty = bar_w - filled
 
+        room_type = ctx.get("room_type", "")
+
         t = Text()
         t.append(f" {L('act')} {act}", style="bold white")
         t.append(f"  {L('floor')} {floor}", style="dim white")
+        if room_type:
+            room_colors = {"Boss": "bold red", "Elite": "bold bright_magenta", "Monster": "dim white"}
+            t.append(f"  [{room_type}]", style=room_colors.get(room_type, "dim"))
         t.append("  ", style="dim")
         t.append(f"{L('turn')} {turn}", style="bold bright_cyan")
         t.append("  |  ", style="dim")
@@ -301,6 +306,7 @@ class EnemyWidget(Static):
             ("is_heal", "\u2764", "Heal", "bold green"),
             ("is_stun", "\u26a1", "Stun", "bold yellow"),
             ("is_summon", "\u2728", "Summon", "bold white"),
+            ("is_sleep", "\U0001f4a4", "Zzz", "dim cyan"),
         ]
 
         secondary_shown = False
@@ -578,7 +584,11 @@ class CardWidget(Static):
             t.append(f"({cost_str}) ", style="bold yellow")
         color = CARD_TYPE_COLORS.get(c.get("type", ""), "white")
         name = _name_str(c.get("name"))
-        t.append(name, style=f"bold {color}")
+        # Show "+" suffix for upgraded cards so players can distinguish them
+        if c.get("upgraded"):
+            t.append(f"{name}+", style=f"bold {color}")
+        else:
+            t.append(name, style=f"bold {color}")
         if not c.get("can_play", True):
             t.append(f" ({L('unplayable')})", style="dim red")
         # Show keyword tags on the header line for quick visibility
